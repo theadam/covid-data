@@ -157,7 +157,6 @@ func fetchRecovered() ([]data.DataPoint, error) {
 func getFields(records []string) (state string, country string) {
 	state = records[0]
 	country = records[1]
-
 	if country == "US" && strings.Contains(state, ", ") {
 		items := strings.Split(state, ", ")
 		code, ok := utils.StateCodes[strings.TrimSpace(items[1])]
@@ -166,6 +165,9 @@ func getFields(records []string) (state string, country string) {
 			state = code
 		}
 	}
+    if country == "US" {
+        country = "United States"
+    }
     return state, country
 }
 

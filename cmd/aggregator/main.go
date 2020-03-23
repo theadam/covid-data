@@ -2,9 +2,8 @@ package main
 
 import (
 	"covid-tracker/data"
+	"covid-tracker/utils"
 	"fmt"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
 type Aggregate struct {
@@ -13,12 +12,8 @@ type Aggregate struct {
 }
 
 func main() {
-    db, err := gorm.Open("sqlite3", "test.db")
-    db.LogMode(true)
-    if err != nil {
-		fmt.Println(err)
-        panic("failed to connect database")
-    }
+    db := utils.OpenDB()
+    defer db.Close()
 
     aggregates := make([]Aggregate, 0)
     db.Model(&data.Point).

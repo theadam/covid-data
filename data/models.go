@@ -23,6 +23,7 @@ type CountyData struct {
     gorm.Model
     ExternalId string `json:"externalId"`
     State string `json:"state"`
+    StateCode string `json:"state_code"`
     County string `json:"county"`
     Confirmed int `json:"confirmed"`
     Deaths int `json:"deaths"`

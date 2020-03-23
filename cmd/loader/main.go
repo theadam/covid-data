@@ -1,13 +1,13 @@
 package main
 
 import (
+	"covid-tracker/data"
 	"covid-tracker/fetch/jhu"
 	"covid-tracker/fetch/opta"
-	"covid-tracker/data"
+	"covid-tracker/utils"
+	"flag"
 	"fmt"
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
-    "flag"
 )
 
 func loadJhu(db *gorm.DB) {
@@ -43,12 +43,9 @@ func loadOpta(db *gorm.DB) {
 }
 
 func main() {
-    db, err := gorm.Open("sqlite3", "test.db")
-    db.LogMode(true)
-    if err != nil {
-		fmt.Println(err)
-        panic("failed to connect database")
-    }
+    db := utils.OpenDB()
+    defer db.Close()
+
     db.AutoMigrate(&data.Point, &data.CountyCases)
 
 

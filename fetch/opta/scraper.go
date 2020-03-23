@@ -114,7 +114,8 @@ func convertItem(item optaItem) (data.CountyData, error) {
     }
     return data.CountyData{
         ExternalId: item.Id,
-        State: item.State,
+        StateCode: item.State,
+        State: utils.StateCodes[item.State],
         County: item.County,
         Confirmed: item.PeopleCount,
         Deaths: item.DeathCount,

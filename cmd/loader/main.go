@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
+    "flag"
 )
 
 func loadJhu(db *gorm.DB) {
@@ -17,6 +18,7 @@ func loadJhu(db *gorm.DB) {
 	}
 
     db.Transaction(func(tx *gorm.DB) error {
+        db.Unscoped().Delete(&data.Point)
         for _, point := range points {
             tx.Create(&point)
         }
@@ -38,7 +40,6 @@ func loadOpta(db *gorm.DB) {
         }
         return nil
     })
-    fmt.Print(len(countyDatas))
 }
 
 func main() {
@@ -50,6 +51,16 @@ func main() {
     }
     db.AutoMigrate(&data.Point, &data.CountyCases)
 
-    // loadJhu()
-    loadOpta(db)
+
+    skipJhu := flag.Bool("skip-jhu", false, "Skip loading johns hopkins university data")
+    skipOpta := flag.Bool("skip-1point3acres", false, "Skip 1point3acres data")
+
+    flag.Parse()
+
+    if !*skipJhu {
+        loadJhu(db)
+    }
+    if !*skipOpta {
+        loadOpta(db)
+    }
 }

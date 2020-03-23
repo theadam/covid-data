@@ -19,4 +19,14 @@ type DataPoint struct {
 
 var Point DataPoint
 
+type CountyData struct {
+    gorm.Model
+    ExternalId string
+    State string
+    County string
+    Confirmed int
+    Deaths int
+    Date time.Time
+}
 
+var CountyCases CountyData

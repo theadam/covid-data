@@ -11,21 +11,23 @@ import {
   VerticalGridLines,
   LineSeries,
   DiscreteColorLegend,
+  makeWidthFlexible,
 } from 'react-vis';
+import { css } from 'emotion';
 
 export default class Example extends React.Component {
   render() {
+    const Plot = makeWidthFlexible(XYPlot);
+
     return (
       <div>
-        <DiscreteColorLegend items={['one', 'two', 'three', 'four']} />
-        <XYPlot width={300} height={300}>
+        <Plot height={500}>
           <HorizontalGridLines />
           <VerticalGridLines />
           <XAxis />
           <YAxis />
           <ChartLabel
             text="X Axis"
-            className="alt-x-label"
             includeMargin={false}
             xPercent={0.025}
             yPercent={1.01}
@@ -35,7 +37,7 @@ export default class Example extends React.Component {
             text="Y Axis"
             className="alt-y-label"
             includeMargin={false}
-            xPercent={0.06}
+            xPercent={0.01}
             yPercent={0.06}
             style={{
               transform: 'rotate(-90)',
@@ -74,7 +76,14 @@ export default class Example extends React.Component {
               { x: 4, y: 2 },
             ]}
           />
-        </XYPlot>
+        </Plot>
+        <DiscreteColorLegend
+          className={css`
+            text-align: right;
+          `}
+          items={['one', 'two', 'three', 'four']}
+          orientation="horizontal"
+        />
       </div>
     );
   }

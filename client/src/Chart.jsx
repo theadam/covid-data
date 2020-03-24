@@ -15,76 +15,61 @@ import {
 } from 'react-vis';
 import { css } from 'emotion';
 
-export default class Example extends React.Component {
-  render() {
-    const Plot = makeWidthFlexible(XYPlot);
+const legendClass = css``;
 
-    return (
-      <div>
-        <Plot height={500}>
-          <HorizontalGridLines />
-          <VerticalGridLines />
-          <XAxis />
-          <YAxis />
-          <ChartLabel
-            text="X Axis"
-            includeMargin={false}
-            xPercent={0.025}
-            yPercent={1.01}
-          />
+export default function() {
+  const [data, setData] = React.useState(null);
+  React.useEffect(() => {
+    fetch('/data/country/historical?country=United%20States,Italy')
+      .then(r => r.json())
+      .then(setData);
+  }, []);
 
-          <ChartLabel
-            text="Y Axis"
-            className="alt-y-label"
-            includeMargin={false}
-            xPercent={0.01}
-            yPercent={0.06}
-            style={{
-              transform: 'rotate(-90)',
-              textAnchor: 'end',
-            }}
-          />
-          <LineSeries
-            data={[
-              { x: 1, y: 3 },
-              { x: 2, y: 5 },
-              { x: 3, y: 15 },
-              { x: 4, y: 12 },
-            ]}
-          />
-          <LineSeries className="second-series" data={null} />
-          <LineSeries
-            curve={'curveMonotoneX'}
-            data={[
-              { x: 1, y: 10 },
-              { x: 2, y: 4 },
-              { x: 3, y: 2 },
-              { x: 4, y: 15 },
-            ]}
-            strokeDasharray={'7, 3'}
-          />
-          <LineSeries
-            curve={curveCatmullRom.alpha(0.5)}
-            style={{
-              // note that this can not be translated to the canvas version
-              strokeDasharray: '2 2',
-            }}
-            data={[
-              { x: 1, y: 7 },
-              { x: 2, y: 11 },
-              { x: 3, y: 9 },
-              { x: 4, y: 2 },
-            ]}
-          />
-        </Plot>
-        <DiscreteColorLegend
-          className={css`
-            text-align: right;
-          `}
-          items={['one', 'two', 'three', 'four']}
-          orientation="horizontal"
+  if (!data) return null;
+
+  const items = Object.keys(data);
+
+  const Plot = makeWidthFlexible(XYPlot);
+
+  return (
+    <div style={{ paddingLeft: 20, paddingRight: 20 }}>
+      <Plot height={500} style={{ paddingLeft: 20, paddingRight: 20 }}>
+        <HorizontalGridLines />
+        <VerticalGridLines />
+        <XAxis tickFormat={i => data[items[0]][i].date} tickLabelAngle={90} />
+        <YAxis />
+        <ChartLabel
+          text="Date"
+          includeMargin={false}
+          xPercent={0.025}
+          yPercent={1.01}
         />
-      </div>
-    );
-  }
+
+        <ChartLabel
+          text="Confirmed Cases"
+          className="alt-y-label"
+          includeMargin={false}
+          xPercent={0.01}
+          yPercent={0.06}
+          style={{
+            transform: 'rotate(-90)',
+            textAnchor: 'end',
+          }}
+        />
+        {items.map((name, i) => (
+          <LineSeries
+            data={data[name].map((item, i) => ({
+              x: i,
+              y: item.confirmed,
+            }))}
+          />
+        ))}
+      </Plot>
+      <DiscreteColorLegend
+        className={legendClass}
+        items={items}
+        orientation="horizontal"
+      />
+    </div>
+  );
 }

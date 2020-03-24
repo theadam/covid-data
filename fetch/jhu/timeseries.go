@@ -154,6 +154,17 @@ func fetchRecovered() ([]data.DataPoint, error) {
 	return fetchTimeSeries("csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Recovered.csv", "recovered")
 }
 
+func flipComma(name string) string {
+    if strings.Contains(name, ",") {
+        split := strings.Split(name, ",")
+        if len(split) > 2 {
+            panic("Found a country with more than one comma: " + name)
+        }
+        return strings.TrimSpace(split[1]) + " " + strings.TrimSpace(split[0])
+    }
+    return name
+}
+
 func getFields(records []string) (state string, country string) {
 	state = records[0]
 	country = records[1]
@@ -168,7 +179,7 @@ func getFields(records []string) (state string, country string) {
     if country == "US" {
         country = "United States"
     }
-    return state, country
+    return state, flipComma(country)
 }
 
 func getDates(dateHeaders []string) (dates []time.Time, err error) {

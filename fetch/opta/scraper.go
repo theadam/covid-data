@@ -126,13 +126,13 @@ func convertItem(item optaItem) (data.CountyData, error) {
 func convertItems(items []optaItem) ([]data.CountyData, error) {
     result := make([]data.CountyData, len(items))
 
-    for _, item := range items {
+    for i, item := range items {
         value, err := convertItem(item)
         if err != nil {
             return nil, err
         }
 
-        result = append(result, value)
+        result[i] = value
     }
 
     return result, nil

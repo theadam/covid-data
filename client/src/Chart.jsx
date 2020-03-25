@@ -78,9 +78,10 @@ function getYDomain(data, xDomain) {
   return [minY, maxY * 1.05];
 }
 
-const defaultWidth = 15;
+const defaultWidth = 30;
 function getInitialDomain(data) {
   const keys = Object.keys(data);
+  if (keys.length === 0) return undefined;
   const last = data[keys[0]].length - 1;
 
   if (last <= defaultWidth) {
@@ -91,39 +92,59 @@ function getInitialDomain(data) {
 
 const Plot = makeWidthFlexible(XYPlot);
 
-export default function() {
-  const [data, setData] = React.useState(null);
-  const [crosshairValues, setCrosshairValues] = React.useState([]);
-  const [domain, setDomain] = React.useState(null);
-  const brushing = React.useRef(false);
-  React.useEffect(() => {
-    fetch(
-      '/data/countries/historical?country=United%20States,Italy,Spain,South%20Korea,Iran',
-    )
-      .then(r => r.json())
-      .then(j => {
-        const data = mapEachArray(j, (item, i) => ({
-          x: i,
-          index: i,
-          y: item.confirmed,
-          formattedDate: formatDate(item.date),
-          ...item,
-        }));
-        setData(data);
-        setDomain(getInitialDomain(data));
-      });
-  }, []);
+function pick(map, items) {
+  if (items.length === 0) {
+    return makeWorldData(map);
+  }
+  return items.reduce((acc, k) => {
+    return { ...acc, [k]: map[k] };
+  }, {});
+}
 
-  if (!data) return null;
+function makeWorldData(data) {
+  const keys = Object.keys(data);
+
+  const result = [];
+  const base = () => ({
+    confirmed: 0,
+    deaths: 0,
+    date: "",
+    counry: "",
+  });
+  keys.forEach(key => {
+    data[key].forEach((d, i) => {
+      if (!result[i]) {
+        result[i] = base();
+        result[i].date = d.date;
+        result[i].country = "World";
+      }
+      result[i].confirmed += d.confirmed;
+      result[i].deaths += d.deaths;
+    })
+  });
+  return {'World': result };
+}
+
+export default function({data: baseData, chartedCountries}) {
+  const [crosshairValues, setCrosshairValues] = React.useState([]);
+  const brushing = React.useRef(false);
+  const data = React.useMemo(() => mapEachArray(pick(baseData, chartedCountries), (item, i) => ({
+    x: i,
+    index: i,
+    y: item.confirmed,
+    formattedDate: formatDate(item.date),
+    ...item,
+  })), [baseData, chartedCountries])
+  const [domain, setDomain] = React.useState(() => getInitialDomain(data));
 
   const items = Object.keys(data);
 
   return (
-    <div style={{ paddingLeft: 20, paddingRight: 20 }}>
+    <div style={{ paddingLeft: 20, paddingRight: 20, flex: 1 }}>
+      <div>
       <Plot
         animation
-        height={500}
-        style={{ overflow: 'visible' }}
+        height={300}
         xDomain={domain && [domain.left, domain.right]}
         yDomain={domain && getYDomain(data, [domain.left, domain.right])}
       >
@@ -188,12 +209,15 @@ export default function() {
             ))
           : null}
       </Plot>
+    </div>
+    <div>
       <Brusher
         setDomain={setDomain}
         brushing={brushing}
         data={data}
         items={items}
       />
+    </div>
       <DiscreteColorLegend
         className={legendClass}
         items={items}

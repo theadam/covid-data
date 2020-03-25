@@ -125,18 +125,40 @@ function makeWorldData(data) {
   return { World: result };
 }
 
+const overrides = {};
+const DAY = 1000 * 60 * 60 * 24;
+
+function moveDate(date, override) {
+  if (override === 0) {
+    return date;
+  }
+  const [, year, month, day] = dateRegexp.exec(date);
+
+  const parsed = new Date(
+    Date.UTC(Number(year), Number(month) - 1, Number(day)),
+  );
+  parsed.setTime(parsed.getTime() + override * DAY);
+  return parsed.toISOString();
+}
+
 export default function ({ data: baseData, chartedCountries, onLegendClick }) {
   const [crosshairValues, setCrosshairValues] = React.useState([]);
   const brushing = React.useRef(false);
   const data = React.useMemo(
     () =>
-      mapEachArray(pick(baseData, chartedCountries), (item, i) => ({
-        x: i,
-        index: i,
-        y: item.confirmed,
-        formattedDate: formatDate(item.date),
-        ...item,
-      })),
+      mapEachArray(pick(baseData, chartedCountries), (item, i) => {
+        const override = overrides[item.country] || 0;
+        const date = moveDate(item.date, override);
+
+        return {
+          x: i + override,
+          index: i + override,
+          y: item.confirmed,
+          formattedDate: formatDate(date),
+          date,
+          ...item,
+        };
+      }),
     [baseData, chartedCountries],
   );
   const [domain, setDomain] = React.useState(() => getInitialDomain(data));

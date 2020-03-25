@@ -12,7 +12,7 @@ import (
 )
 
 type optaItem struct {
-    Id string `json:"id"`
+    Id int `json:"id"`
     ConfirmedDate string `json:"confirmed_date"`
     PeopleCount int `json:"people_count"`
     DeathCount int `json:"die_count"`
@@ -56,7 +56,7 @@ func fetchStrings(urls []string) ([]string, error) {
 }
 
 func isValidJsData(data string) bool {
-    return strings.Contains(data, "us-100")
+    return strings.Contains(data, "Snohomish")
 }
 
 func filterValidData(jsDatas []string) string {
@@ -99,7 +99,7 @@ func toOpta(jsonString string) ([]optaItem, error) {
 
 func checkList(optaList []optaItem) bool {
     for _, item := range optaList {
-        result := item.Id == "us-1"
+        result := item.County == "Snohomish"
         if result {
             return result
         }
@@ -113,7 +113,7 @@ func convertItem(item optaItem) (data.CountyData, error) {
         return data.CountyData{}, err
     }
     return data.CountyData{
-        ExternalId: item.Id,
+        ExternalId: strconv.Itoa(item.Id),
         StateCode: item.State,
         State: utils.StateCodes[item.State],
         County: item.County,

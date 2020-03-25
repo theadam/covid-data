@@ -65,8 +65,8 @@ function getYDomain(data, xDomain) {
   let maxY = null;
   let minY = null;
 
-  keys.forEach(key => {
-    data[key].slice(xDomain[0], xDomain[1] + 1).forEach(item => {
+  keys.forEach((key) => {
+    data[key].slice(xDomain[0], xDomain[1] + 1).forEach((item) => {
       if (maxY === null || item.y > maxY) {
         maxY = item.y;
       }
@@ -108,33 +108,37 @@ function makeWorldData(data) {
   const base = () => ({
     confirmed: 0,
     deaths: 0,
-    date: "",
-    counry: "",
+    date: '',
+    counry: '',
   });
-  keys.forEach(key => {
+  keys.forEach((key) => {
     data[key].forEach((d, i) => {
       if (!result[i]) {
         result[i] = base();
         result[i].date = d.date;
-        result[i].country = "World";
+        result[i].country = 'World';
       }
       result[i].confirmed += d.confirmed;
       result[i].deaths += d.deaths;
-    })
+    });
   });
-  return {'World': result };
+  return { World: result };
 }
 
-export default function({data: baseData, chartedCountries}) {
+export default function ({ data: baseData, chartedCountries, onLegendClick }) {
   const [crosshairValues, setCrosshairValues] = React.useState([]);
   const brushing = React.useRef(false);
-  const data = React.useMemo(() => mapEachArray(pick(baseData, chartedCountries), (item, i) => ({
-    x: i,
-    index: i,
-    y: item.confirmed,
-    formattedDate: formatDate(item.date),
-    ...item,
-  })), [baseData, chartedCountries])
+  const data = React.useMemo(
+    () =>
+      mapEachArray(pick(baseData, chartedCountries), (item, i) => ({
+        x: i,
+        index: i,
+        y: item.confirmed,
+        formattedDate: formatDate(item.date),
+        ...item,
+      })),
+    [baseData, chartedCountries],
+  );
   const [domain, setDomain] = React.useState(() => getInitialDomain(data));
 
   const items = Object.keys(data);
@@ -142,83 +146,84 @@ export default function({data: baseData, chartedCountries}) {
   return (
     <div style={{ paddingLeft: 20, paddingRight: 20, flex: 1 }}>
       <div>
-      <Plot
-        animation
-        height={300}
-        xDomain={domain && [domain.left, domain.right]}
-        yDomain={domain && getYDomain(data, [domain.left, domain.right])}
-      >
-        <HorizontalGridLines />
-        <VerticalGridLines />
-        <XAxis
-          tickFormat={i => {
-            if (data[items[0]][i]) {
-              return data[items[0]][i].formattedDate;
-            }
-          }}
-        />
-        <YAxis tickFormat={formatNumber} />
-        <ChartLabel
-          text="Date"
-          includeMargin={false}
-          xPercent={0.025}
-          yPercent={1.01}
-        />
-
-        <ChartLabel
-          text="Confirmed Cases"
-          className="alt-y-label"
-          includeMargin={false}
-          xPercent={0.01}
-          yPercent={0.06}
-          style={{
-            transform: 'rotate(-90)',
-            textAnchor: 'end',
-          }}
-        />
-        <Crosshair
-          className={crosshairClass}
-          values={crosshairValues}
-          itemsFormat={items => items.map(formatItem)}
-          titleFormat={formatTitle}
-        />
-        {items.map((name, i) => (
-          <LineSeries
-            key={name}
-            curve={curveCatmullRom.alpha(0.5)}
-            onNearestX={
-              i === 0
-                ? (value, { index }) => {
-                    if (!brushing.current) {
-                      setCrosshairValues(items.map(i => data[i][index]));
-                    }
-                  }
-                : null
-            }
-            data={data[name]}
+        <Plot
+          animation
+          height={300}
+          xDomain={domain && [domain.left, domain.right]}
+          yDomain={domain && getYDomain(data, [domain.left, domain.right])}
+        >
+          <HorizontalGridLines />
+          <VerticalGridLines />
+          <XAxis
+            tickFormat={(i) => {
+              if (data[items[0]][i]) {
+                return data[items[0]][i].formattedDate;
+              }
+            }}
           />
-        ))}
-        {crosshairValues[0]
-          ? items.map(name => (
-              <MarkSeries
-                animation={false}
-                key={name}
-                stroke="white"
-                data={[data[name][crosshairValues[0].index]]}
-              />
-            ))
-          : null}
-      </Plot>
-    </div>
-    <div>
-      <Brusher
-        setDomain={setDomain}
-        brushing={brushing}
-        data={data}
-        items={items}
-      />
-    </div>
+          <YAxis tickFormat={formatNumber} />
+          <ChartLabel
+            text="Date"
+            includeMargin={false}
+            xPercent={0.025}
+            yPercent={1.01}
+          />
+
+          <ChartLabel
+            text="Confirmed Cases"
+            className="alt-y-label"
+            includeMargin={false}
+            xPercent={0.01}
+            yPercent={0.06}
+            style={{
+              transform: 'rotate(-90)',
+              textAnchor: 'end',
+            }}
+          />
+          <Crosshair
+            className={crosshairClass}
+            values={crosshairValues}
+            itemsFormat={(items) => items.map(formatItem)}
+            titleFormat={formatTitle}
+          />
+          {items.map((name, i) => (
+            <LineSeries
+              key={name}
+              curve={curveCatmullRom.alpha(0.5)}
+              onNearestX={
+                i === 0
+                  ? (value, { index }) => {
+                      if (!brushing.current) {
+                        setCrosshairValues(items.map((i) => data[i][index]));
+                      }
+                    }
+                  : null
+              }
+              data={data[name]}
+            />
+          ))}
+          {crosshairValues[0]
+            ? items.map((name) => (
+                <MarkSeries
+                  animation={false}
+                  key={name}
+                  stroke="white"
+                  data={[data[name][crosshairValues[0].index]]}
+                />
+              ))
+            : null}
+        </Plot>
+      </div>
+      <div>
+        <Brusher
+          setDomain={setDomain}
+          brushing={brushing}
+          data={data}
+          items={items}
+        />
+      </div>
       <DiscreteColorLegend
+        onItemClick={chartedCountries.length > 0 ? onLegendClick : undefined}
         className={legendClass}
         items={items}
         orientation="horizontal"
@@ -247,15 +252,15 @@ const Brusher = React.memo(({ setDomain, brushing, data, items }) => {
         onBrushStart={() => {
           brushing.current = true;
         }}
-        onBrushEnd={area => {
+        onBrushEnd={(area) => {
           brushing.current = false;
           setArea(area);
           setDomain(area);
         }}
-        onDrag={a => {
+        onDrag={(a) => {
           setDomain(a);
         }}
-        onDragEnd={a => {
+        onDragEnd={(a) => {
           setArea(a);
           setDomain(a);
         }}

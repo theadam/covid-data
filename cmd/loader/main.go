@@ -49,15 +49,17 @@ func main() {
     db.AutoMigrate(&data.Point, &data.CountyCases)
 
 
-    skipJhu := flag.Bool("skip-jhu", false, "Skip loading johns hopkins university data")
-    skipOpta := flag.Bool("skip-1point3acres", false, "Skip 1point3acres data")
+    runJhu := flag.Bool("jhu", false, "Load johns hopkins university data")
+    runOpta := flag.Bool("1point3acres", false, "Load 1point3acres data")
 
     flag.Parse()
 
-    if !*skipJhu {
+    runAll := !*runJhu && !*runOpta
+
+    if runAll || *runJhu {
         loadJhu(db)
     }
-    if !*skipOpta {
+    if runAll || *runOpta {
         loadOpta(db)
     }
 }

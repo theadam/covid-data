@@ -14,8 +14,12 @@ type Env struct {
 }
 
 func (env *Env) GetCountries(c *gin.Context) {
-	var countries []string
-	env.db.Model(&data.Point).Select("country").Group("country").Pluck("country", &countries)
+	type shape struct {
+		Country     string `json:"country"`
+		CountryCode string `json:"countryCode"`
+	}
+	var countries []shape
+	env.db.Model(&data.Point).Select("country, country_code").Group("country, country_code").Scan(&countries)
 
 	c.JSON(200, countries)
 }
@@ -41,10 +45,10 @@ func (env *Env) GetCounties(c *gin.Context) {
 
 func (env *Env) GetCountryData(c *gin.Context) {
 	type shape struct {
-		Country   string `json:"country"`
-		Confirmed int    `json:"confirmed"`
-		Deaths    int    `json:"deaths"`
-		Recovered int    `json:"recovered"`
+		Country     string `json:"country"`
+		CountryCode string `json:"countryCode"`
+		Confirmed   int    `json:"confirmed"`
+		Deaths      int    `json:"deaths"`
 	}
 	var results []shape
 
@@ -52,8 +56,8 @@ func (env *Env) GetCountryData(c *gin.Context) {
 
 	env.db.
 		Model(&data.Point).
-		Select("country, sum(confirmed) as confirmed, sum(deaths) as deaths, sum(recovered) as recovered").
-		Group("country").
+		Select("country, country_code, sum(confirmed) as confirmed, sum(deaths) as deaths").
+		Group("country, country_code").
 		Where("date = (?)", maxDate).
 		Scan(&results)
 
@@ -81,6 +85,7 @@ func countryAggregates(db *gorm.DB) *gorm.DB {
 	countryAggregates := db.Select(`
         date,
         country,
+        country_code,
         CASE
           WHEN country != "United States" THEN sum(confirmed)
           ELSE (?)
@@ -88,10 +93,9 @@ func countryAggregates(db *gorm.DB) *gorm.DB {
         CASE
           WHEN country != "United States" THEN sum(deaths)
           ELSE (?)
-        END as deaths,
-        sum(recovered) as recovered
+        END as deaths
     `, usConfirmed.QueryExpr(), usDeaths.QueryExpr()).Model(&data.Point).
-		Group("date, country").
+		Group("date, country, country_code").
 		Order("date, country")
 
 	return countryAggregates
@@ -99,11 +103,11 @@ func countryAggregates(db *gorm.DB) *gorm.DB {
 
 func (env *Env) GetCountryHistorical(c *gin.Context) {
 	type shape struct {
-		Date      time.Time `json:"date"`
-		Country   string    `json:"country"`
-		Confirmed int       `json:"confirmed"`
-		Deaths    int       `json:"deaths"`
-		Recovered int       `json:"recovered"`
+		Date        time.Time `json:"date"`
+		Country     string    `json:"country"`
+		CountryCode string    `json:"countryCode"`
+		Confirmed   int       `json:"confirmed"`
+		Deaths      int       `json:"deaths"`
 	}
 
 	query := countryAggregates(env.db)
@@ -187,7 +191,7 @@ func (env *Env) GetStateHistorical(c *gin.Context) {
 func (env *Env) GetCountyData(c *gin.Context) {
 	type shape struct {
 		State     string `json:"state"`
-		County     string `json:"county"`
+		County    string `json:"county"`
 		Confirmed int    `json:"confirmed"`
 		Deaths    int    `json:"deaths"`
 	}
@@ -210,7 +214,7 @@ func (env *Env) GetCountyData(c *gin.Context) {
 func (env *Env) GetCountyHistorical(c *gin.Context) {
 	type shape struct {
 		State     string `json:"state"`
-		County     string `json:"county"`
+		County    string `json:"county"`
 		Date      string `json:"date"`
 		Confirmed int    `json:"confirmed"`
 		Deaths    int    `json:"deaths"`
@@ -257,11 +261,11 @@ func Router(db *gorm.DB) *gin.Engine {
 	r.GET("/countries", env.GetCountries)
 	r.GET("/states", env.GetStates)
 	r.GET("/counties", env.GetCounties)
-	r.GET("/data/country", env.GetCountryData)
-	r.GET("/data/country/historical", env.GetCountryHistorical)
-	r.GET("/data/us/state", env.GetStateData)
-	r.GET("/data/us/state/historical", env.GetStateHistorical)
-	r.GET("/data/us/county", env.GetCountyData)
-	r.GET("/data/us/county/historical", env.GetCountyHistorical)
+	r.GET("/data/countries", env.GetCountryData)
+	r.GET("/data/countries/historical", env.GetCountryHistorical)
+	r.GET("/data/us/states", env.GetStateData)
+	r.GET("/data/us/states/historical", env.GetStateHistorical)
+	r.GET("/data/us/counties", env.GetCountyData)
+	r.GET("/data/us/counties/historical", env.GetCountyHistorical)
 	return r
 }

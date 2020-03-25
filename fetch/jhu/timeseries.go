@@ -10,9 +10,28 @@ import (
 	"strconv"
 	"errors"
     "fmt"
+    "github.com/pariz/gountries"
 )
 
 const timeLayout = "1/2/06"
+
+func isCruise(country string) bool {
+    return country == "Diamond Princess"
+}
+
+var countryOverrides = map[string]string{
+    "Cabo Verde": "Cape Verde",
+    "Congo (Brazzaville)": "Democratic Republic of the Congo",
+    "Congo (Kinshasa)": "Democratic Republic of the Congo",
+    "Cote d'Ivoire": "Ivory Coast",
+    "Czechia": "Czech Republic",
+    "Eswatini": "Swaziland",
+    "Holy See": "Vatican City",
+    "Korea, South": "South Korea",
+    "North Macedonia": "Macedonia",
+    "Taiwan*": "Taiwan",
+    "US": "United States",
+}
 
 
 type rawValue struct {
@@ -24,14 +43,12 @@ type rawValue struct {
 	date      time.Time
 	confirmed int
 	deaths    int
-	recovered int
 }
 
 type DateValue struct {
 	Date      time.Time
 	Confirmed int
 	Deaths    int
-	Recovered int
 }
 
 type StateData struct {
@@ -54,17 +71,15 @@ type CountryData struct {
 
 type covidData map[string]CountryData
 
-func getValues(kind string, value int) (confirmed int, deaths int, recovered int, err error) {
+func getValues(kind string, value int) (confirmed int, deaths int, err error) {
 	if kind == "confirmed" {
 		confirmed = value
 	} else if kind == "deaths" {
 		deaths = value
-	} else if kind == "recovered" {
-		recovered = value
 	} else {
 		err = errors.New(fmt.Sprintf("Invalid kind: %s", kind))
 	}
-	return confirmed, deaths, recovered, err
+	return confirmed, deaths, err
 }
 
 
@@ -104,7 +119,7 @@ func fetchTimeSeries(path string, kind string) ([]data.DataPoint, error) {
 			return points, err
 		}
 
-        state, country := getFields(records)
+        state, country, code := getFields(records)
 
 		dateData := records[4:]
 
@@ -118,7 +133,7 @@ func fetchTimeSeries(path string, kind string) ([]data.DataPoint, error) {
 				return points, err
 			}
 
-			confirmed, deaths, recovered, err := getValues(kind, number)
+			confirmed, deaths, err := getValues(kind, number)
 
 			if err != nil {
 				return nil, err
@@ -129,10 +144,12 @@ func fetchTimeSeries(path string, kind string) ([]data.DataPoint, error) {
 			points = append(points, data.DataPoint{
 				Confirmed: confirmed,
 				Deaths:    deaths,
-				Recovered: recovered,
 				Date:      date,
 				Country:   country,
+                CountryCode: code,
                 State:     state,
+                ExternalState: records[0],
+                ExternalCountry: records[1],
 				Lat:       records[2],
 				Long:      records[3],
 			})
@@ -143,43 +160,43 @@ func fetchTimeSeries(path string, kind string) ([]data.DataPoint, error) {
 }
 
 func fetchConfirmed() ([]data.DataPoint, error) {
-	return fetchTimeSeries("csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Confirmed.csv", "confirmed")
+    return fetchTimeSeries("csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv", "confirmed")
 }
 
 func fetchDeaths() ([]data.DataPoint, error) {
-	return fetchTimeSeries("csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Deaths.csv", "deaths")
+    return fetchTimeSeries("csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv", "confirmed")
 }
 
-func fetchRecovered() ([]data.DataPoint, error) {
-	return fetchTimeSeries("csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Recovered.csv", "recovered")
-}
-
-func flipComma(name string) string {
-    if strings.Contains(name, ",") {
-        split := strings.Split(name, ",")
-        if len(split) > 2 {
-            panic("Found a country with more than one comma: " + name)
-        }
-        return strings.TrimSpace(split[1]) + " " + strings.TrimSpace(split[0])
-    }
-    return name
-}
-
-func getFields(records []string) (state string, country string) {
+func getFields(records []string) (state string, country string, code string) {
 	state = records[0]
 	country = records[1]
-	if country == "US" && strings.Contains(state, ", ") {
+    if isCruise(country) {
+        return country, "Cruise", ""
+    }
+
+    override, ok := countryOverrides[country]
+    if ok {
+        country = override
+    }
+
+    query := gountries.New()
+    c, err := query.FindCountryByName(country)
+    if err != nil {
+        fmt.Println(country)
+        panic("ERROR: Country Not Found")
+    }
+    country = c.Name.Common
+    code = c.Codes.CCN3
+    if country == "United States" && strings.Contains(state, ", ") {
+
 		items := strings.Split(state, ", ")
-		code, ok := utils.StateCodes[strings.TrimSpace(items[1])]
+		result, ok := utils.StateCodes[strings.TrimSpace(items[1])]
 
 		if ok {
-			state = code
+			state = result
 		}
 	}
-    if country == "US" {
-        country = "United States"
-    }
-    return state, flipComma(country)
+    return state, country, code
 }
 
 func getDates(dateHeaders []string) (dates []time.Time, err error) {
@@ -211,7 +228,6 @@ func updateData(points []data.DataPoint, point data.DataPoint) []data.DataPoint 
 		last := points[index]
 		last.Confirmed += point.Confirmed
 		last.Deaths += point.Deaths
-		last.Recovered += point.Recovered
 		points[index] = last
 		return points
 	} else {
@@ -226,11 +242,7 @@ func fetchAll() (masterList []data.DataPoint, err error) {
     deaths, err := fetchDeaths()
 	if err != nil { return nil, err }
 
-    recovered, err := fetchRecovered()
-	if err != nil { return nil, err }
-
 	master := append(confirmed, deaths...)
-	master = append(master, recovered...)
 
     return master, nil
 }

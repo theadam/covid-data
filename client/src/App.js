@@ -1,5 +1,6 @@
 import React from 'react';
 import Chart from './Chart';
+import '../node_modules/react-vis/dist/style.css';
 
 function App() {
   return (

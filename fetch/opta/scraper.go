@@ -70,15 +70,26 @@ func filterValidData(jsDatas []string) string {
     return ""
 }
 
-func toJsonString(jsData string) (string, error) {
+func cleanData(jsData string) string {
     hexUnicode, err := regexp.Compile(`\\x(..)`)
-    if err != nil { return "", err }
-    res := strings.Split(jsData, "JSON.parse('")[3]
-    str := strings.Split(res, "')}")[0]
-    str = strings.ReplaceAll(str, "\\'", "'")
+    if (err != nil) {
+        panic("Invalid regexp")
+    }
+
+    str := strings.ReplaceAll(jsData, "\\'", "'")
     str = strings.ReplaceAll(str, `\\"`, `\"`)
     str = hexUnicode.ReplaceAllString(str, `\u00$1`)
-    return str, nil
+    return str
+}
+
+func toJsonString(jsData string) (string, string, error) {
+    confirmedRes := strings.Split(jsData, "JSON.parse('")[3]
+    confirmed := strings.Split(confirmedRes, "')}")[0]
+
+    deathsRes := strings.Split(jsData, "JSON.parse('")[5]
+    deaths := strings.Split(deathsRes, "')}")[0]
+
+    return cleanData(confirmed), cleanData(deaths), nil
 }
 
 func toOpta(jsonString string) ([]optaItem, error) {
@@ -146,11 +157,16 @@ func GetData() ([]data.CountyData, error) {
     jsData, err := fetchStrings(urls)
     if err != nil { return nil, err }
 
-    jsonString, err := toJsonString(filterValidData(jsData))
+    confirmedString, deathsString, err := toJsonString(filterValidData(jsData))
     if err != nil { return nil, err }
 
-    optaData, err := toOpta(jsonString)
+    confirmedData, err := toOpta(confirmedString)
     if err != nil { return nil, err }
+
+    deathsData, err := toOpta(deathsString)
+    if err != nil { return nil, err }
+
+    optaData := append(confirmedData, deathsData...)
 
     result, err := convertItems(optaData)
     if err != nil { return nil, err }

@@ -4,6 +4,51 @@ import { interpolateReds } from 'd3-scale-chromatic';
 import * as topojson from 'topojson';
 import worldData from './data/countries-110m.json';
 
+import Slider from '@material-ui/core/Slider';
+
+import { withStyles } from '@material-ui/core/styles';
+
+const AirbnbSlider = withStyles({
+  root: {
+    color: '#3a8589',
+    height: 3,
+    padding: '13px 0',
+  },
+  thumb: {
+    height: 27,
+    width: 27,
+    backgroundColor: '#fff',
+    border: '1px solid currentColor',
+    marginTop: -12,
+    marginLeft: -13,
+    boxShadow: '#ebebeb 0px 2px 2px',
+    '&:focus, &:hover, &$active': {
+      boxShadow: '#ccc 0px 2px 3px 1px',
+    },
+    '& .bar': {
+      // display: inline-block !important;
+      height: 9,
+      width: 1,
+      backgroundColor: 'currentColor',
+      marginLeft: 1,
+      marginRight: 1,
+    },
+  },
+  active: {},
+  valueLabel: {
+    marginLeft: 4,
+    left: 'calc(-50% + 4px)',
+  },
+  track: {
+    height: 3,
+  },
+  rail: {
+    color: '#d8d8d8',
+    opacity: 1,
+    height: 3,
+  },
+})(Slider);
+
 let cancel;
 const debounce = (fn, time) => (...args) => {
   if (cancel) clearTimeout(cancel);
@@ -27,11 +72,11 @@ sizeProjection();
 const worldFeatures = topojson.feature(worldData, worldData.objects.countries)
   .features;
 
-function getFinals(data) {
+function getIndex(data, index) {
   const keys = Object.keys(data);
   return keys.map((key) => {
     const list = data[key];
-    return list[list.length - 1];
+    return list[index ? index : data[key].length - 1];
   });
 }
 
@@ -56,9 +101,21 @@ function getMax(finals, item = 'confirmed') {
   return max;
 }
 
+const dateRegexp = /^(\d{4})-0?(\d{1,2})-0?(\d{1,2})T/;
+function formatDate(d) {
+  const [, , /*year*/ month, day] = dateRegexp.exec(d);
+  return `${month}/${day}`;
+}
+
 export default function WorldMap({ data, onDataClick }) {
-  const finals = getFinals(data);
-  const byCode = mapByCode(finals);
+  const keys = React.useMemo(() => Object.keys(data), [data]);
+  const firstKey = React.useMemo(() => keys[0], [keys]);
+  const firstData = React.useMemo(() => data[firstKey], [data, firstKey]);
+  const [index, setIndex] = React.useState(firstData.length - 1);
+
+  const finals = getIndex(data);
+  const dataSlice = getIndex(data, index);
+  const byCode = mapByCode(dataSlice);
   const max = getMax(finals);
 
   const [tipLocation, setTipLocation] = React.useState(null);
@@ -83,8 +140,12 @@ export default function WorldMap({ data, onDataClick }) {
   }, []);
 
   return (
-    <div>
-      <svg height={height} width={width}>
+    <div style={{ marginLeft: 20 }}>
+      <svg
+        height={height}
+        width={width}
+        style={{ border: '1px solid #AAAAAA' }}
+      >
         <g height={height} width={width}>
           <g height={height} width={width}>
             {worldFeatures.map((d, i) => {
@@ -109,7 +170,6 @@ export default function WorldMap({ data, onDataClick }) {
                       bounds: path.bounds(d),
                       id: d.id,
                       name: d.properties.name,
-                      data,
                     });
                   }}
                 />
@@ -120,6 +180,7 @@ export default function WorldMap({ data, onDataClick }) {
       </svg>
       {tipLocation &&
         (() => {
+          const tipData = byCode[tipLocation.id];
           const [[x1, y1], [x2, y2]] = tipLocation.bounds;
           const yOffset =
             y1 + (y2 - y1) / 2 > height / 2 ? -(height / 6) : height / 6;
@@ -150,14 +211,22 @@ export default function WorldMap({ data, onDataClick }) {
                 }}
               >
                 <span style={{ fontWeight: 'bold' }}>{tipLocation.name}</span>
-                {tipLocation.data &&
-                  `\n${tipLocation.data.confirmed} Confirmed Cases`}
-                {tipLocation.data && `\n${tipLocation.data.deaths} Fatalities`}
-                {!tipLocation.data && `\nNo Cases`}
+                {tipData && `\n${tipData.confirmed} Confirmed Cases`}
+                {tipData && `\n${tipData.deaths} Fatalities`}
+                {!tipData && `\nNo Cases`}
               </div>
             </div>
           );
         })()}
+      <AirbnbSlider
+        valueLabelDisplay={'auto'}
+        value={index}
+        min={0}
+        max={firstData.length - 1}
+        marks
+        onChange={(_, i) => setIndex(i)}
+        valueLabelFormat={(i) => formatDate(firstData[i].date)}
+      />
     </div>
   );
 }

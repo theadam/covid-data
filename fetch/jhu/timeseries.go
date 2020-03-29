@@ -16,7 +16,7 @@ import (
 const timeLayout = "1/2/06"
 
 func isCruise(country string) bool {
-    return country == "Diamond Princess"
+    return country == "Diamond Princess" || country == "MS Zaandam"
 }
 
 var countryOverrides = map[string]string{
@@ -31,6 +31,10 @@ var countryOverrides = map[string]string{
     "North Macedonia": "Macedonia",
     "Taiwan*": "Taiwan",
     "US": "United States",
+    "The West Bank and Gaza": "Palestine",
+    "West Bank and Gaza": "Palestine",
+    "Kosovo": "Republic of Serbia",
+    "Burma": "Republic of the Union of Myanmar",
 }
 
 
@@ -164,7 +168,7 @@ func fetchConfirmed() ([]data.DataPoint, error) {
 }
 
 func fetchDeaths() ([]data.DataPoint, error) {
-    return fetchTimeSeries("csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv", "confirmed")
+    return fetchTimeSeries("csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv", "deaths")
 }
 
 func getFields(records []string) (state string, country string, code string) {

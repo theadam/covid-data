@@ -50,7 +50,7 @@ func main() {
 
 
     runJhu := flag.Bool("jhu", false, "Load johns hopkins university data")
-    runOpta := flag.Bool("1point3acres", false, "Load 1point3acres data")
+    runOpta := flag.Bool("opta", false, "Load 1point3acres data")
 
     flag.Parse()
 

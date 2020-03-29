@@ -24,9 +24,11 @@ var Point DataPoint
 type CountyData struct {
     gorm.Model
     ExternalId string `json:"externalId"`
+    FipsId string `json:"fipsId"`
     State string `json:"state"`
     StateCode string `json:"stateCode"`
     County string `json:"county"`
+    CountyKey string `json:"countyKey"`
     Confirmed int `json:"confirmed"`
     Deaths int `json:"deaths"`
     Date time.Time `json:"date"`

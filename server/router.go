@@ -53,6 +53,7 @@ func (env *Env) GetCountryData(c *gin.Context) {
 	var results []shape
 
 	maxDate := env.db.Model(&data.Point).Select("max(date)").QueryExpr()
+	maxCountyDate := env.db.Model(&data.CountyCases).Select("max(date)").QueryExpr()
 
 	env.db.
 		Model(&data.Point).
@@ -64,6 +65,7 @@ func (env *Env) GetCountryData(c *gin.Context) {
 	var usResult shape
 	env.db.Model(&data.CountyCases).
 		Select("sum(confirmed) as confirmed, sum(deaths) as deaths").
+        Where("date = (?)", maxCountyDate).
 		Scan(&usResult)
 
 	for i, result := range results {
@@ -78,7 +80,7 @@ func (env *Env) GetCountryData(c *gin.Context) {
 }
 
 func countryAggregates(db *gorm.DB) *gorm.DB {
-	usBase := db.Model(&data.CountyCases).Where("date <= data_points.date")
+	usBase := db.Model(&data.CountyCases).Where("date = data_points.date")
 	usConfirmed := usBase.Select("sum(confirmed)")
 	usDeaths := usBase.Select("sum(deaths)")
 
@@ -137,12 +139,14 @@ func (env *Env) GetStateData(c *gin.Context) {
 		Confirmed int    `json:"confirmed"`
 		Deaths    int    `json:"deaths"`
 	}
+	maxDate := env.db.Model(&data.CountyCases).Select("max(date)").QueryExpr()
 
 	var results []shape
 	env.db.
 		Select(`
             CASE WHEN state = "" THEN "Unknown" ELSE state END as state, sum(confirmed) as confirmed, sum(deaths) as deaths
         `).
+        Where("date = (?)", maxDate).
 		Model(&data.CountyCases).
 		Group("state").
 		Scan(&results)
@@ -158,29 +162,20 @@ func (env *Env) GetStateHistorical(c *gin.Context) {
 		Deaths    int    `json:"deaths"`
 	}
 
-	base := env.db.Model(&data.CountyCases).Where("date <= outer_data.date").Where("state = states.state")
-	confirmed := base.Select("sum(confirmed)")
-	deaths := base.Select("sum(deaths)")
-
-	tableName := env.db.NewScope(&data.CountyCases).TableName()
-
-	states := env.db.Model(&data.CountyCases).Select("state").Group("state")
-
 	var results []shape
 	query := env.db.
 		Select(`
             date,
-            CASE WHEN states.state = "" THEN "Unknown" ELSE states.state END as state,
-            (?) as confirmed,
-            (?) as deaths
-        `, confirmed.QueryExpr(), deaths.QueryExpr()).
-		Table(tableName+" outer_data").
-		Joins("CROSS JOIN (?) states", states.QueryExpr()).
-		Group("date, states.state").
-		Order("date, states.state")
+            CASE WHEN state = "" THEN "Unknown" ELSE state END as state,
+            sum(confirmed) as confirmed,
+            sum(deaths) as deaths
+            `).
+            Model(&data.CountyCases).
+            Group("date, state").
+            Order("date, state")
 
 	if c.Query("state") != "" {
-		query = query.Where("states.state in (?)", strings.Split(c.Query("state"), ","))
+		query = query.Where("state in (?)", strings.Split(c.Query("state"), ","))
 	}
 
 	query.Scan(&results)
@@ -196,6 +191,7 @@ func (env *Env) GetCountyData(c *gin.Context) {
 		Deaths    int    `json:"deaths"`
 	}
 
+	maxDate := env.db.Model(&data.CountyCases).Select("max(date)").QueryExpr()
 	var results []shape
 	env.db.
 		Select(`
@@ -205,6 +201,7 @@ func (env *Env) GetCountyData(c *gin.Context) {
             sum(deaths) as deaths
         `).
 		Model(&data.CountyCases).
+        Where("date = (?)", maxDate).
 		Group("state, county").
 		Scan(&results)
 
@@ -218,40 +215,45 @@ func (env *Env) GetCountyHistorical(c *gin.Context) {
 		Date      string `json:"date"`
 		Confirmed int    `json:"confirmed"`
 		Deaths    int    `json:"deaths"`
+		FipsId    string    `json:"fipsId"`
 	}
-
-	base := env.db.Model(&data.CountyCases).Where("date <= outer_data.date").Where("state = counties.state").Where("county = counties.county")
-	confirmed := base.Select("sum(confirmed)")
-	deaths := base.Select("sum(deaths)")
-
-	tableName := env.db.NewScope(&data.CountyCases).TableName()
-
-	counties := env.db.Model(&data.CountyCases).Select("state, county").Group("state, county")
 
 	var results []shape
 	query := env.db.
 		Select(`
             date,
-            CASE WHEN counties.state = "" THEN "Unknown" ELSE counties.state END as state,
-            CASE WHEN counties.county = "" THEN "Unknown" ELSE counties.county END as county,
-            (?) as confirmed,
-            (?) as deaths
-        `, confirmed.QueryExpr(), deaths.QueryExpr()).
-		Table(tableName+" outer_data").
-		Joins("CROSS JOIN (?) counties", counties.QueryExpr()).
-		Group("date, counties.state, counties.county").
-		Order("date, counties.state, counties.county")
+            fips_id,
+            CASE WHEN state = "" THEN "Unknown" ELSE state END as state,
+            CASE WHEN county = "" THEN "Unknown" ELSE county END as county,
+            sum(confirmed) as confirmed,
+            sum(deaths) as deaths
+        `).
+        Model(&data.CountyCases).
+		Group("date, state, county, fips_id").
+		Order("date, state, county, fips_id")
 
 	if c.Query("state") != "" {
-		query = query.Where("counties.state in (?)", strings.Split(c.Query("state"), ","))
+		query = query.Where("state in (?)", strings.Split(c.Query("state"), ","))
 	}
 	if c.Query("county") != "" {
-		query = query.Where("counties.county in (?)", strings.Split(c.Query("county"), ","))
+		query = query.Where("county in (?)", strings.Split(c.Query("county"), ","))
 	}
 
 	query.Scan(&results)
 
-	c.JSON(200, results)
+	obj := make(map[string][]shape)
+
+	for _, item := range results {
+		slice, ok := obj[item.FipsId]
+		if !ok {
+			slice = make([]shape, 0)
+		}
+		slice = append(slice, item)
+		obj[item.FipsId] = slice
+	}
+
+
+	c.JSON(200, obj)
 }
 
 func Router(db *gorm.DB) *gin.Engine {

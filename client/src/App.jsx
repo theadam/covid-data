@@ -2,6 +2,7 @@ import React from 'react';
 import Chart from './Chart';
 import '../node_modules/react-vis/dist/style.css';
 import WorldMap from './WorldMap';
+import CountyMap from './CountyMap';
 
 function App() {
   const [data, setData] = React.useState(null);
@@ -12,6 +13,13 @@ function App() {
       .then(setData);
   }, []);
 
+  const [countyData, setCountyData] = React.useState(null);
+  React.useEffect(() => {
+    fetch('/data/us/counties/historical/')
+      .then((r) => r.json())
+      .then(setCountyData);
+  }, []);
+
   function toggleCharted(name) {
     if (chartedCountries.indexOf(name) >= 0) {
       setChartedCountries(chartedCountries.filter((n) => n !== name));
@@ -20,21 +28,24 @@ function App() {
     }
   }
   return (
-    <div className="App" style={{ display: 'flex' }}>
-      {data !== null && (
-        <>
-          <WorldMap
-            data={data}
-            onDataClick={(data) => toggleCharted(data.country)}
-            chartedCountries={chartedCountries}
-          />
-          <Chart
-            data={data}
-            chartedCountries={chartedCountries}
-            onLegendClick={toggleCharted}
-          />
-        </>
-      )}
+    <div className="App" style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex' }}>
+        {data !== null && (
+          <>
+            <WorldMap
+              data={data}
+              onDataClick={(data) => toggleCharted(data.country)}
+              chartedCountries={chartedCountries}
+            />
+            <Chart
+              data={data}
+              chartedCountries={chartedCountries}
+              onLegendClick={toggleCharted}
+            />
+          </>
+        )}
+      </div>
+      <div>{countyData !== null && <CountyMap data={countyData} />}</div>
     </div>
   );
 }

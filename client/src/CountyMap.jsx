@@ -1,8 +1,9 @@
 import React from 'react';
-import { geoNaturalEarth1 as proj, geoPath } from 'd3-geo';
+import { geoAlbersUsa as proj, geoPath } from 'd3-geo';
 import { interpolateReds } from 'd3-scale-chromatic';
 import * as topojson from 'topojson';
-import worldData from './data/countries-110m.json';
+import countyData from './data/counties-10m.json';
+import { interpolate } from 'd3-interpolate';
 
 import Slider from '@material-ui/core/Slider';
 
@@ -69,10 +70,8 @@ function sizeProjection(width) {
   return dy;
 }
 sizeProjection();
-const worldFeatures = topojson.feature(
-  topojson.simplify(topojson.presimplify(worldData)),
-  worldData.objects.countries,
-).features;
+const countyFeatures = topojson.feature(countyData, countyData.objects.counties)
+  .features;
 
 function getIndex(data, index) {
   const keys = Object.keys(data);
@@ -85,8 +84,8 @@ function getIndex(data, index) {
 function mapByCode(finals) {
   const result = {};
   finals.forEach((final) => {
-    if (!final.countryCode) return;
-    result[final.countryCode] = final;
+    if (!final || !final.fipsId) return;
+    result[final.fipsId] = final;
   });
   return result;
 }
@@ -109,28 +108,30 @@ function formatDate(d) {
   return `${month}/${day}`;
 }
 
-export default function WorldMap({ data, onDataClick }) {
+export default function CountyMap({ data, onDataClick }) {
   const keys = React.useMemo(() => Object.keys(data), [data]);
   const firstKey = React.useMemo(() => keys[0], [keys]);
   const firstData = React.useMemo(() => data[firstKey], [data, firstKey]);
   const [index, setIndex] = React.useState(firstData.length - 1);
 
-  const finals = getIndex(data);
-  const dataSlice = getIndex(data, index);
-  const byCode = mapByCode(dataSlice);
-  const max = getMax(finals);
+  const finals = React.useMemo(() => getIndex(data), [data]);
+  const dataSlice = React.useMemo(() => getIndex(data, index), [data, index]);
+  const byCode = React.useMemo(() => mapByCode(dataSlice), [dataSlice]);
+  const max = React.useMemo(() => getMax(finals), [finals]);
 
-  const [tipLocation, setTipLocation] = React.useState(null);
+  const [tipLocation, _] = React.useState(null);
   const [width, setWidth] = React.useState(
-    Math.min(document.documentElement.clientWidth, 700),
+    () => document.documentElement.clientWidth - 40,
   );
   const [height, setHeight] = React.useState(() => sizeProjection(width));
   const [path, setPath] = React.useState(() =>
     geoPath().projection(projection),
   );
+  const paths = React.useMemo(() => countyFeatures.map((d) => path(d)), [path]);
+
   React.useEffect(() => {
     function listener() {
-      const width = Math.min(document.documentElement.clientWidth, 700);
+      const width = document.documentElement.clientWidth - 40;
       setWidth(width);
       const height = sizeProjection(width);
       setHeight(height);
@@ -140,26 +141,26 @@ export default function WorldMap({ data, onDataClick }) {
     window.addEventListener('resize', debounced);
     return () => window.removeEventListener('resize', debounced);
   }, []);
+  const interpolator = interpolateReds;
 
   return (
-    <div style={{ marginLeft: 20 }}>
+    <div style={{ marginLeft: 20, marginRight: 20 }}>
       <svg
         height={height}
         width={width}
         style={{ border: '1px solid #AAAAAA' }}
       >
-        <rect width={width} height={height} fill="white" />
         <g height={height} width={width}>
           <g height={height} width={width}>
-            {worldFeatures.map((d, i) => {
+            {countyFeatures.map((d, i) => {
               const data = byCode[d.id];
               return (
                 <path
                   key={i}
-                  d={path(d)}
+                  d={paths[i]}
                   fill={
                     data
-                      ? interpolateReds(
+                      ? interpolator(
                           Math.sqrt(Math.sqrt(data.confirmed)) /
                             Math.sqrt(Math.sqrt(max)),
                         )
@@ -174,14 +175,6 @@ export default function WorldMap({ data, onDataClick }) {
                         }
                       : undefined
                   }
-                  onMouseOver={(e) => {
-                    if (tipLocation && tipLocation.id === d.id) return;
-                    setTipLocation({
-                      bounds: path.bounds(d),
-                      id: d.id,
-                      name: d.properties.name,
-                    });
-                  }}
                 />
               );
             })}

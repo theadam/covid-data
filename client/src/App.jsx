@@ -3,6 +3,13 @@ import Chart from './Chart';
 import '../node_modules/react-vis/dist/style.css';
 import WorldMap from './WorldMap';
 import CountyMap from './CountyMap';
+import { css } from 'emotion';
+
+const transitionPaths = css`
+  path {
+    transition: fill 0.5s;
+  }
+`;
 
 function App() {
   const [data, setData] = React.useState(null);
@@ -28,7 +35,10 @@ function App() {
     }
   }
   return (
-    <div className="App" style={{ display: 'flex', flexDirection: 'column' }}>
+    <div
+      className={`App ${transitionPaths}`}
+      style={{ display: 'flex', flexDirection: 'column' }}
+    >
       <div style={{ display: 'flex' }}>
         {data !== null && (
           <>

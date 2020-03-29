@@ -3,8 +3,9 @@ import { geoAlbersUsa as proj, geoPath } from 'd3-geo';
 import { interpolateReds } from 'd3-scale-chromatic';
 import * as topojson from 'topojson';
 import countyData from './data/counties-10m.json';
-import { interpolate } from 'd3-interpolate';
 
+import IconButton from '@material-ui/core/IconButton';
+import PlayArrow from '@material-ui/icons/PlayArrow';
 import Slider from '@material-ui/core/Slider';
 
 import { withStyles } from '@material-ui/core/styles';
@@ -112,7 +113,9 @@ export default function CountyMap({ data, onDataClick }) {
   const keys = React.useMemo(() => Object.keys(data), [data]);
   const firstKey = React.useMemo(() => keys[0], [keys]);
   const firstData = React.useMemo(() => data[firstKey], [data, firstKey]);
-  const [index, setIndex] = React.useState(firstData.length - 1);
+  const [index, rawSetIndex] = React.useState(firstData.length - 1);
+  const [playing, setPlaying] = React.useState(false);
+  const timeoutRef = React.useRef(null);
 
   const finals = React.useMemo(() => getIndex(data), [data]);
   const dataSlice = React.useMemo(() => getIndex(data, index), [data, index]);
@@ -142,6 +145,27 @@ export default function CountyMap({ data, onDataClick }) {
     return () => window.removeEventListener('resize', debounced);
   }, []);
   const interpolator = interpolateReds;
+
+  function setIndex(l) {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    rawSetIndex(l);
+  }
+
+  function play() {
+    let cur = 0;
+    setPlaying(true);
+    const step = () => {
+      setIndex(cur++);
+      if (cur < firstData.length) {
+        timeoutRef.current = setTimeout(step, 20);
+      } else {
+        setPlaying(false);
+      }
+    };
+    step();
+  }
 
   return (
     <div style={{ marginLeft: 20, marginRight: 20 }}>
@@ -221,15 +245,20 @@ export default function CountyMap({ data, onDataClick }) {
             </div>
           );
         })()}
-      <AirbnbSlider
-        valueLabelDisplay={'auto'}
-        value={index}
-        min={0}
-        max={firstData.length - 1}
-        marks
-        onChange={(_, i) => setIndex(i)}
-        valueLabelFormat={(i) => formatDate(firstData[i].date)}
-      />
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <IconButton onClick={play}>
+          <PlayArrow />
+        </IconButton>
+        <AirbnbSlider
+          valueLabelDisplay={'auto'}
+          value={index}
+          min={0}
+          max={firstData.length - 1}
+          marks
+          onChange={(_, i) => setIndex(i)}
+          valueLabelFormat={(i) => formatDate(firstData[i].date)}
+        />
+      </div>
     </div>
   );
 }

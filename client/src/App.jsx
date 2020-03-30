@@ -7,7 +7,16 @@ import { css } from 'emotion';
 
 const transitionPaths = css`
   path {
-    transition: fill 0.5s;
+    transition: fill 0.2s;
+  }
+  path:hover {
+    opacity: 0.5;
+  }
+  .chart-tip {
+    display: none;
+  }
+  svg:hover + .chart-tip {
+    display: block;
   }
 `;
 
@@ -15,14 +24,14 @@ function App() {
   const [data, setData] = React.useState(null);
   const [chartedCountries, setChartedCountries] = React.useState([]);
   React.useEffect(() => {
-    fetch('/data/countries/historical/')
+    fetch('/api/data/countries/historical/')
       .then((r) => r.json())
       .then(setData);
   }, []);
 
   const [countyData, setCountyData] = React.useState(null);
   React.useEffect(() => {
-    fetch('/data/us/counties/historical/')
+    fetch('/api/data/us/counties/historical/')
       .then((r) => r.json())
       .then(setCountyData);
   }, []);

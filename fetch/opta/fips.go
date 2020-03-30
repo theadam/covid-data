@@ -19,16 +19,21 @@ func contents() io.Reader {
 }
 
 func cleanCounty(c string) string {
-    pattern, _ := regexp.Compile(" (County|Parish|Municipality|Borough|City and Borough)$")
+    pattern, _ := regexp.Compile(" (County|Borough|Municipality|Parish|City and Borough)$")
     c = pattern.ReplaceAllString(c, "")
 
     pattern, _ = regexp.Compile(" city$")
     return pattern.ReplaceAllString(c, " City")
 }
 
-func ParseFips() map[string]string {
+type FipsData struct {
+    Name string
+    Fips string
+}
+
+func ParseFips() map[string]FipsData {
 	reader := csv.NewReader(contents())
-    result := make(map[string]string)
+    result := make(map[string]FipsData)
 
     for {
         reader, err := reader.Read()
@@ -42,7 +47,10 @@ func ParseFips() map[string]string {
 
         key := stateCode + "-" + cleanCounty(countyName)
 
-        result[strings.ToLower(key)] = fips
+        result[strings.ToLower(key)] = FipsData{
+            Name: countyName,
+            Fips: fips,
+        }
     }
     return result
 }

@@ -260,14 +260,26 @@ func Router(db *gorm.DB) *gin.Engine {
 	r := gin.Default()
 	env := &Env{db: db}
 
-	r.GET("/countries", env.GetCountries)
-	r.GET("/states", env.GetStates)
-	r.GET("/counties", env.GetCounties)
-	r.GET("/data/countries", env.GetCountryData)
-	r.GET("/data/countries/historical", env.GetCountryHistorical)
-	r.GET("/data/us/states", env.GetStateData)
-	r.GET("/data/us/states/historical", env.GetStateHistorical)
-	r.GET("/data/us/counties", env.GetCountyData)
-	r.GET("/data/us/counties/historical", env.GetCountyHistorical)
+    api := r.Group("/api/")
+    {
+        api.GET("/countries", env.GetCountries)
+        api.GET("/states", env.GetStates)
+        api.GET("/counties", env.GetCounties)
+        api.GET("/data/countries", env.GetCountryData)
+        api.GET("/data/countries/historical", env.GetCountryHistorical)
+        api.GET("/data/us/states", env.GetStateData)
+        api.GET("/data/us/states/historical", env.GetStateHistorical)
+        api.GET("/data/us/counties", env.GetCountyData)
+        api.GET("/data/us/counties/historical", env.GetCountyHistorical)
+    }
+
+    r.Static("/client", "./client/build")
+
+    r.NoRoute(func(c *gin.Context) {
+        // c.String(404, "404 page not found")
+
+        c.File("./client/build/index.html")
+    })
+
 	return r
 }

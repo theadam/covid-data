@@ -6,6 +6,7 @@ import countyData from './data/counties-10m.json';
 
 import IconButton from '@material-ui/core/IconButton';
 import PlayArrow from '@material-ui/icons/PlayArrow';
+import Pause from '@material-ui/icons/Pause';
 import Slider from '@material-ui/core/Slider';
 
 import { withStyles } from '@material-ui/core/styles';
@@ -122,7 +123,7 @@ export default function CountyMap({ data, onDataClick }) {
   const byCode = React.useMemo(() => mapByCode(dataSlice), [dataSlice]);
   const max = React.useMemo(() => getMax(finals), [finals]);
 
-  const [tipLocation, _] = React.useState(null);
+  const [tipLocation, setTipLocation] = React.useState(null);
   const [width, setWidth] = React.useState(
     () => document.documentElement.clientWidth - 40,
   );
@@ -149,17 +150,23 @@ export default function CountyMap({ data, onDataClick }) {
   function setIndex(l) {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
+      setPlaying(false);
     }
     rawSetIndex(l);
   }
 
   function play() {
-    let cur = 0;
+    if (playing) {
+      clearTimeout(timeoutRef.current);
+      setPlaying(false);
+      return;
+    }
+    let cur = index === firstData.length - 1 ? 0 : index;
     setPlaying(true);
     const step = () => {
-      setIndex(cur++);
+      rawSetIndex(cur++);
       if (cur < firstData.length) {
-        timeoutRef.current = setTimeout(step, 20);
+        timeoutRef.current = setTimeout(step, 200);
       } else {
         setPlaying(false);
       }
@@ -168,7 +175,7 @@ export default function CountyMap({ data, onDataClick }) {
   }
 
   return (
-    <div style={{ marginLeft: 20, marginRight: 20 }}>
+    <div style={{ marginLeft: 20, marginRight: 20, position: 'relative' }}>
       <svg
         height={height}
         width={width}
@@ -190,15 +197,15 @@ export default function CountyMap({ data, onDataClick }) {
                         )
                       : '#EEE'
                   }
-                  stroke="#AAAAAA"
-                  cursor={data ? 'pointer' : undefined}
-                  onClick={
-                    data
-                      ? () => {
-                          onDataClick(data);
-                        }
-                      : undefined
-                  }
+                  stroke={'#AAAAAA'}
+                  onMouseOver={(e) => {
+                    if (tipLocation && tipLocation.id === d.id) return;
+                    setTipLocation({
+                      bounds: path.bounds(d),
+                      id: d.id,
+                      name: d.properties.name,
+                    });
+                  }}
                 />
               );
             })}
@@ -208,6 +215,7 @@ export default function CountyMap({ data, onDataClick }) {
       {tipLocation &&
         (() => {
           const tipData = byCode[tipLocation.id];
+          if (!tipData) return null;
           const [[x1, y1], [x2, y2]] = tipLocation.bounds;
           const yOffset =
             y1 + (y2 - y1) / 2 > height / 2 ? -(height / 6) : height / 6;
@@ -225,6 +233,7 @@ export default function CountyMap({ data, onDataClick }) {
                 pointerEvents: 'none',
                 whiteSpace: 'pre',
               }}
+              className="chart-tip"
             >
               <div
                 style={{
@@ -237,7 +246,9 @@ export default function CountyMap({ data, onDataClick }) {
                   boxShadow: '0 2px 4px rgba(0,0,0,0.5)',
                 }}
               >
-                <span style={{ fontWeight: 'bold' }}>{tipLocation.name}</span>
+                <span style={{ fontWeight: 'bold' }}>
+                  {tipData.county}, {tipData.state}
+                </span>
                 {tipData && `\n${tipData.confirmed} Confirmed Cases`}
                 {tipData && `\n${tipData.deaths} Fatalities`}
                 {!tipData && `\nNo Cases`}
@@ -247,10 +258,10 @@ export default function CountyMap({ data, onDataClick }) {
         })()}
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <IconButton onClick={play}>
-          <PlayArrow />
+          {playing ? <Pause /> : <PlayArrow />}
         </IconButton>
         <AirbnbSlider
-          valueLabelDisplay={'auto'}
+          valueLabelDisplay={playing ? 'on' : 'auto'}
           value={index}
           min={0}
           max={firstData.length - 1}

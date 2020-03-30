@@ -53,6 +53,7 @@ var overrides = map[string]map[string]string{
 		"Kansas City": "Jackson",
 		"Joplin":      "Jasper",
 		"TBD":         "Unassigned",
+		"Phelps Maries":         "Phelps",
 	},
 	"MN": map[string]string{
 		"Filmore": "Fillmore",
@@ -63,6 +64,9 @@ var overrides = map[string]map[string]string{
 	"PR": map[string]string{
 		"Puerto Rico": "Unassigned",
 	},
+	"TN": map[string]string{
+		"DeSoto": "Unassigned",
+	},
 	"TX": map[string]string{
 		"De Witt": "DeWitt",
 	},
@@ -70,6 +74,9 @@ var overrides = map[string]map[string]string{
 		"Weber-Morgan":   "Weber",
 		"Southwest Utah": "Unassigned",
 		"TriCounty":      "Uintah",
+		"Grant":          "Grand",
+		"Unitah":         "Uintah",
+		"Unassigned Southwest":         "Unassigned",
 	},
 	"VI": map[string]string{
 		"St. Croix":  "St. Croix Island",
@@ -225,7 +232,7 @@ func convertItem(item optaItem, i int, length int) (data.CountyData, error) {
 	}
 
 	countyKey := item.State + "-" + county
-	fipsId, ok := fipsData[strings.ToLower(countyKey)]
+	fips, ok := fipsData[strings.ToLower(countyKey)]
 
 	if !ok && !ignoreCounty(item.State, county) {
 		fmt.Println(strconv.Itoa(i) + ", " + strconv.Itoa(length))
@@ -236,12 +243,12 @@ func convertItem(item optaItem, i int, length int) (data.CountyData, error) {
 		ExternalId: strconv.Itoa(item.Id),
 		StateCode:  item.State,
 		State:      utils.StateCodes[item.State],
-		County:     county,
+		County:     fips.Name,
 		Confirmed:  item.PeopleCount,
 		Deaths:     item.DeathCount,
 		Date:       date,
 		CountyKey:  countyKey,
-		FipsId:     fipsId,
+		FipsId:     fips.Fips,
 	}, nil
 }
 
@@ -376,8 +383,8 @@ func GetData() ([]data.CountyData, error) {
 	m := mapData(result)
 
 	allDates := timeSlice(collectDates(result))
-    min := allDates[0]
-    max := allDates[len(allDates) - 1]
+	min := allDates[0]
+	max := allDates[len(allDates)-1]
 	sort.Sort(allDates)
 	keys := collectCountyKeys(result)
 
@@ -390,9 +397,8 @@ func GetData() ([]data.CountyData, error) {
 	}
 
 	newresult := make([]data.CountyData, 0)
-    date := min
-    for !date.After(max) {
-        fmt.Println(date)
+	date := min
+	for !date.After(max) {
 		keyMap := m[date]
 		for key, base := range keys {
 			val, ok := keyMap[key]
@@ -417,7 +423,7 @@ func GetData() ([]data.CountyData, error) {
 			}
 		}
 
-        date = date.AddDate(0, 0, 1)
+		date = date.AddDate(0, 0, 1)
 	}
 
 	return newresult, nil

@@ -6,6 +6,7 @@ import worldData from './data/countries-110m.json';
 
 import IconButton from '@material-ui/core/IconButton';
 import PlayArrow from '@material-ui/icons/PlayArrow';
+import Pause from '@material-ui/icons/Pause';
 
 import Slider from '@material-ui/core/Slider';
 
@@ -149,17 +150,23 @@ export default function WorldMap({ data, onDataClick }) {
   function setIndex(l) {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
+      setPlaying(false);
     }
     rawSetIndex(l);
   }
 
   function play() {
-    let cur = 0;
+    if (playing) {
+      clearTimeout(timeoutRef.current);
+      setPlaying(false);
+      return;
+    }
+    let cur = index === firstData.length - 1 ? 0 : index;
     setPlaying(true);
     const step = () => {
-      setIndex(cur++);
+      rawSetIndex(cur++);
       if (cur < firstData.length) {
-        timeoutRef.current = setTimeout(step, 20);
+        timeoutRef.current = setTimeout(step, 200);
       } else {
         setPlaying(false);
       }
@@ -168,7 +175,7 @@ export default function WorldMap({ data, onDataClick }) {
   }
 
   return (
-    <div style={{ marginLeft: 20 }}>
+    <div style={{ marginLeft: 20, position: 'relative' }}>
       <svg
         height={height}
         width={width}
@@ -234,6 +241,7 @@ export default function WorldMap({ data, onDataClick }) {
                 pointerEvents: 'none',
                 whiteSpace: 'pre',
               }}
+              className="chart-tip"
             >
               <div
                 style={{
@@ -256,7 +264,7 @@ export default function WorldMap({ data, onDataClick }) {
         })()}
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <IconButton onClick={play}>
-          <PlayArrow />
+          {playing ? <Pause /> : <PlayArrow />}
         </IconButton>
         <AirbnbSlider
           valueLabelDisplay={playing ? 'on' : 'auto'}

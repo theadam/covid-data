@@ -19,7 +19,19 @@ func ignoreCounty(s string, c string) bool {
 		s == "Grand Princess" ||
 		c == "Non-Utah resident" ||
 		c == "Out-of-state" ||
-		c == "Out of State"
+		c == "Out of State" ||
+		s == "NN"
+}
+
+type stateCounty struct {
+	State  string
+	County string
+}
+
+var coords = map[[2]byte]string{{1, 1}: "one one", {2, 1}: "two one"}
+
+var fullOverride = map[[2]string][2]string{
+	{"NN", "Navajo, AZ"}: {"AZ", "Navajo"},
 }
 
 var overrides = map[string]map[string]string{
@@ -50,10 +62,10 @@ var overrides = map[string]map[string]string{
 		"Other":          "Unassigned",
 	},
 	"MO": map[string]string{
-		"Kansas City": "Jackson",
-		"Joplin":      "Jasper",
-		"TBD":         "Unassigned",
-		"Phelps Maries":         "Phelps",
+		"Kansas City":   "Jackson",
+		"Joplin":        "Jasper",
+		"TBD":           "Unassigned",
+		"Phelps Maries": "Phelps",
 	},
 	"MN": map[string]string{
 		"Filmore": "Fillmore",
@@ -68,15 +80,18 @@ var overrides = map[string]map[string]string{
 		"DeSoto": "Unassigned",
 	},
 	"TX": map[string]string{
-		"De Witt": "DeWitt",
+		"De Witt":             "DeWitt",
+		"Harris--Non Houston": "Harris",
+		"Harris--Houston":     "Harris",
+		"El Paso--Fort Bliss": "El Paso",
 	},
 	"UT": map[string]string{
-		"Weber-Morgan":   "Weber",
-		"Southwest Utah": "Unassigned",
-		"TriCounty":      "Uintah",
-		"Grant":          "Grand",
-		"Unitah":         "Uintah",
-		"Unassigned Southwest":         "Unassigned",
+		"Weber-Morgan":         "Weber",
+		"Southwest Utah":       "Unassigned",
+		"TriCounty":            "Uintah",
+		"Grant":                "Grand",
+		"Unitah":               "Uintah",
+		"Unassigned Southwest": "Unassigned",
 	},
 	"VI": map[string]string{
 		"St. Croix":  "St. Croix Island",
@@ -105,6 +120,9 @@ var overrides = map[string]map[string]string{
 		"Hopewell":        "Hopewell City",
 		"Winchester":      "Winchester City",
 		"Manassas Park":   "Manassas Park City",
+		"Petersburg":      "Petersburg City",
+		"Waynesboro":      "Waynesboro City",
+		"Charke":          "Clarke",
 	},
 }
 
@@ -223,7 +241,16 @@ func convertItem(item optaItem, i int, length int) (data.CountyData, error) {
 		return data.CountyData{}, err
 	}
 	county := strings.ReplaceAll(item.County, "\u200b", "")
-	stateOverride, ok := overrides[item.State]
+	state := item.State
+
+	override, ok := fullOverride[[2]string{state, county}]
+
+	if ok {
+		county = override[1]
+		state = override[0]
+	}
+
+	stateOverride, ok := overrides[state]
 	if ok {
 		countyOverride, ok := stateOverride[county]
 		if ok {
@@ -231,18 +258,18 @@ func convertItem(item optaItem, i int, length int) (data.CountyData, error) {
 		}
 	}
 
-	countyKey := item.State + "-" + county
+	countyKey := state + "-" + county
 	fips, ok := fipsData[strings.ToLower(countyKey)]
 
-	if !ok && !ignoreCounty(item.State, county) {
+	if !ok && !ignoreCounty(state, county) {
 		fmt.Println(strconv.Itoa(i) + ", " + strconv.Itoa(length))
 		panic("County not found: " + strconv.Quote(countyKey))
 	}
 
 	return data.CountyData{
 		ExternalId: strconv.Itoa(item.Id),
-		StateCode:  item.State,
-		State:      utils.StateCodes[item.State],
+		StateCode:  state,
+		State:      utils.StateCodes[state],
 		County:     fips.Name,
 		Confirmed:  item.PeopleCount,
 		Deaths:     item.DeathCount,
@@ -383,9 +410,9 @@ func GetData() ([]data.CountyData, error) {
 	m := mapData(result)
 
 	allDates := timeSlice(collectDates(result))
+	sort.Sort(allDates)
 	min := allDates[0]
 	max := allDates[len(allDates)-1]
-	sort.Sort(allDates)
 	keys := collectCountyKeys(result)
 
 	runningConfirmed := make(map[string]int)
@@ -398,6 +425,7 @@ func GetData() ([]data.CountyData, error) {
 
 	newresult := make([]data.CountyData, 0)
 	date := min
+
 	for !date.After(max) {
 		keyMap := m[date]
 		for key, base := range keys {

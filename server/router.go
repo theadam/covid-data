@@ -33,8 +33,8 @@ func (env *Env) GetStates(c *gin.Context) {
 
 func (env *Env) GetCounties(c *gin.Context) {
 	type shape struct {
-		state  string
-		county string
+        State  string `json:"state"`
+        County string `json:"county"`
 	}
 
 	var result []shape
@@ -89,11 +89,11 @@ func countryAggregates(db *gorm.DB) *gorm.DB {
         country,
         country_code,
         CASE
-          WHEN country != "United States" THEN sum(confirmed)
+          WHEN country != 'United States' THEN sum(confirmed)
           ELSE (?)
         END as confirmed,
         CASE
-          WHEN country != "United States" THEN sum(deaths)
+          WHEN country != 'United States' THEN sum(deaths)
           ELSE (?)
         END as deaths
     `, usConfirmed.QueryExpr(), usDeaths.QueryExpr()).Model(&data.Point).
@@ -144,7 +144,7 @@ func (env *Env) GetStateData(c *gin.Context) {
 	var results []shape
 	env.db.
 		Select(`
-            CASE WHEN state = "" THEN "Unknown" ELSE state END as state, sum(confirmed) as confirmed, sum(deaths) as deaths
+            CASE WHEN state = '' THEN 'Unknown' ELSE state END as state, sum(confirmed) as confirmed, sum(deaths) as deaths
         `).
         Where("date = (?)", maxDate).
 		Model(&data.CountyCases).
@@ -166,7 +166,7 @@ func (env *Env) GetStateHistorical(c *gin.Context) {
 	query := env.db.
 		Select(`
             date,
-            CASE WHEN state = "" THEN "Unknown" ELSE state END as state,
+            CASE WHEN state = '' THEN 'Unknown' ELSE state END as state,
             sum(confirmed) as confirmed,
             sum(deaths) as deaths
             `).
@@ -195,8 +195,8 @@ func (env *Env) GetCountyData(c *gin.Context) {
 	var results []shape
 	env.db.
 		Select(`
-            CASE WHEN county = "" THEN "Unknown" ELSE county END as county,
-            CASE WHEN state = "" THEN "Unknown" ELSE state END as state,
+            CASE WHEN county = '' THEN 'Unknown' ELSE county END as county,
+            CASE WHEN state = '' THEN 'Unknown' ELSE state END as state,
             sum(confirmed) as confirmed,
             sum(deaths) as deaths
         `).
@@ -223,8 +223,8 @@ func (env *Env) GetCountyHistorical(c *gin.Context) {
 		Select(`
             date,
             fips_id,
-            CASE WHEN state = "" THEN "Unknown" ELSE state END as state,
-            CASE WHEN county = "" THEN "Unknown" ELSE county END as county,
+            CASE WHEN state = '' THEN 'Unknown' ELSE state END as state,
+            CASE WHEN county = '' THEN 'Unknown' ELSE county END as county,
             sum(confirmed) as confirmed,
             sum(deaths) as deaths
         `).
@@ -283,3 +283,4 @@ func Router(db *gorm.DB) *gin.Engine {
 
 	return r
 }
+

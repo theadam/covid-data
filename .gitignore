@@ -1,3 +1,4 @@
 test.db
 node_modules
 client/build
+volumes

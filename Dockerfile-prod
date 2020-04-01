@@ -1,0 +1,40 @@
+# Step 1, build client
+FROM node:13.12.0-alpine3.11 AS webpack-build
+
+WORKDIR /app
+
+RUN npm install --force -g yarn
+
+COPY ./client/package.json ./client/yarn.lock /app/
+RUN yarn
+
+COPY ./client /app/
+
+RUN npm build
+
+# Step 2, build server
+FROM golang:1.14.1-alpine3.11 AS build-server
+
+WORKDIR /app
+
+RUN apk add build-base
+RUN apk add --no-cache git mercurial
+RUN go get github.com/cespare/reflex
+
+COPY ./go.mod ./go.sum /app/
+RUN go mod download
+
+COPY . /app/
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -installsuffix cgo -o /app/loader ./cmd/loader/main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -installsuffix cgo -o /app/main ./cmd/server/main.go
+
+RUN chmod +x /app/loader
+RUN chmod +x /app/main
+
+# Step 3, Put it all together
+RUN mkdir -p /app/client/build
+
+COPY --from=webpack-build /app/build /app/client/build
+
+CMD /app/main

@@ -7,7 +7,10 @@ import (
 	"covid-tracker/utils"
 	"flag"
 	"fmt"
+	"strconv"
+
 	"github.com/jinzhu/gorm"
+	"github.com/t-tiger/gorm-bulk-insert"
 )
 
 func loadJhu(db *gorm.DB) {
@@ -17,11 +20,19 @@ func loadJhu(db *gorm.DB) {
 		return
 	}
 
+    items := make([]interface{}, len(points))
+    for i, v := range points {
+        items[i] = v
+    }
+    fmt.Println("Inserting " + strconv.Itoa(len(items)) + " items")
+
     db.Transaction(func(tx *gorm.DB) error {
-        db.Unscoped().Delete(&data.Point)
-        for _, point := range points {
-            tx.Create(&point)
+        tx.Unscoped().Delete(&data.Point)
+        err := gormbulk.BulkInsert(tx, items, 1000)
+        if err != nil {
+            panic(err.Error())
         }
+
         return nil
     })
 }
@@ -33,11 +44,19 @@ func loadOpta(db *gorm.DB) {
 		return
 	}
 
+    items := make([]interface{}, len(countyDatas))
+    for i, v := range countyDatas {
+        items[i] = v
+    }
+    fmt.Println("Inserting " + strconv.Itoa(len(items)) + " items")
+
     db.Transaction(func(tx *gorm.DB) error {
-        db.Unscoped().Delete(&data.CountyCases)
-        for _, item := range countyDatas {
-            tx.Create(&item)
+        tx.Unscoped().Delete(&data.CountyCases)
+        err := gormbulk.BulkInsert(tx, items, 1000)
+        if err != nil {
+            panic(err.Error())
         }
+
         return nil
     })
 }

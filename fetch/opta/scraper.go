@@ -20,7 +20,7 @@ func ignoreCounty(s string, c string) bool {
 		c == "Non-Utah resident" ||
 		c == "Out-of-state" ||
 		c == "Out of State" ||
-		s == "NN"
+		s == "NN" || (s == "GA" && c == "Chambers")
 }
 
 type stateCounty struct {
@@ -36,6 +36,7 @@ var fullOverride = map[[2]string][2]string{
 
 var overrides = map[string]map[string]string{
 	"AK": map[string]string{
+		"Kenai":      "Kenai Peninsula",
 		"Seward":      "Kenai Peninsula",
 		"Homer":       "Kenai Peninsula",
 		"Soldotna":    "Kenai Peninsula",
@@ -44,6 +45,9 @@ var overrides = map[string]map[string]string{
 		"Eagle River": "Anchorage",
 		"North Pole":  "Fairbanks North Star",
 		"Gridwood":    "Anchorage",
+	},
+	"ID": map[string]string{
+		"Adam": "Adams",
 	},
 	"IL": map[string]string{
 		"La Salle": "LaSalle",
@@ -69,6 +73,10 @@ var overrides = map[string]map[string]string{
 	},
 	"MN": map[string]string{
 		"Filmore": "Fillmore",
+	},
+	"NH": map[string]string{
+		"Manchester": "Hillsborough",
+		"Nashua": "Hillsborough",
 	},
 	"OK": map[string]string{
 		"Out-of-State": "Unassigned",
@@ -126,7 +134,7 @@ var overrides = map[string]map[string]string{
 	},
 }
 
-type optaItem struct {
+type preOptaItem struct {
 	Id            int    `json:"id"`
 	ConfirmedDate string `json:"confirmed_date"`
 	PeopleCount   int    `json:"people_count"`
@@ -136,6 +144,37 @@ type optaItem struct {
 	County        string `json:"county"`
 	Num           int    `json:"num"`
 }
+
+type optaItem struct {
+	Id            int    `json:"id"`
+	ConfirmedDate string `json:"confirmed_date"`
+	PeopleCount   int    `json:"people_count"`
+	DeathCount    int    `json:"die_count"`
+	Comments      string `json:"comments_en"`
+	State         string `json:"state_name"`
+	County        string `json:"county"`
+	Num           int    `json:"num"`
+    Orig string
+}
+
+func (o *optaItem) UnmarshalJSON(data []byte) error {
+    var v preOptaItem
+    err := json.Unmarshal(data, &v)
+    if err != nil {
+        return err
+    }
+	o.Id = v.Id
+	o.ConfirmedDate = v.ConfirmedDate
+	o.PeopleCount = v.PeopleCount
+	o.DeathCount = v.DeathCount
+	o.Comments = v.Comments
+	o.State = v.State
+	o.County = v.County
+	o.Num = v.Num
+    o.Orig = string(data)
+    return nil
+}
+
 
 const MAIN_URL = "https://coronavirus.1point3acres.com"
 const JS_PREFIX = "/_next/static/"
@@ -263,6 +302,9 @@ func convertItem(item optaItem, i int, length int) (data.CountyData, error) {
 
 	if !ok && !ignoreCounty(state, county) {
 		fmt.Println(strconv.Itoa(i) + ", " + strconv.Itoa(length))
+		fmt.Println(item.Orig)
+		fmt.Println(item.ConfirmedDate)
+		fmt.Println(item.Comments)
 		panic("County not found: " + strconv.Quote(countyKey))
 	}
 

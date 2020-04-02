@@ -14,12 +14,14 @@ import (
 
 func ignoreCounty(s string, c string) bool {
 	return c == "Unassigned" ||
+        c == "unassigned" ||
 		c == "Unknown" ||
 		s == "Diamond Princess" ||
 		s == "Grand Princess" ||
 		c == "Non-Utah resident" ||
 		c == "Out-of-state" ||
 		c == "Out of State" ||
+		c == "Out of state" ||
 		s == "NN" || (s == "GA" && c == "Chambers")
 }
 
@@ -45,6 +47,10 @@ var overrides = map[string]map[string]string{
 		"Eagle River": "Anchorage",
 		"North Pole":  "Fairbanks North Star",
 		"Gridwood":    "Anchorage",
+        "Wasilla": "Matanuska-Susitna",
+	},
+	"IA": map[string]string{
+		"Obrien": "O'Brien",
 	},
 	"ID": map[string]string{
 		"Adam": "Adams",
@@ -96,6 +102,7 @@ var overrides = map[string]map[string]string{
 	"UT": map[string]string{
 		"Weber-Morgan":         "Weber",
 		"Southwest Utah":       "Unassigned",
+		"Central Utah":       "Unassigned",
 		"TriCounty":            "Uintah",
 		"Grant":                "Grand",
 		"Unitah":               "Uintah",
@@ -131,6 +138,7 @@ var overrides = map[string]map[string]string{
 		"Petersburg":      "Petersburg City",
 		"Waynesboro":      "Waynesboro City",
 		"Charke":          "Clarke",
+		"Covington":          "Covington City",
 	},
 }
 

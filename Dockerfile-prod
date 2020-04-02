@@ -10,7 +10,7 @@ RUN yarn
 
 COPY ./client /app/
 
-RUN npm build
+RUN npm run-script build
 
 # Step 2, build server
 FROM golang:1.14.1-alpine3.11 AS build-server

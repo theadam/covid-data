@@ -12,7 +12,7 @@ services:
     volumes:
       - ./:/app
     environment:
-      - DATABASE_URL=postgres://postgres:password@postgres:5432/covid
+      - DATABASE_URL=postgres://postgres:password@postgres:5432/covid?sslmode=disabled
 
   covid-client:
     container_name: covid-client

@@ -17,7 +17,7 @@ func OpenDB() *gorm.DB {
     var err error
 
     for (err != nil || db == nil) && cur < waittime {
-        db, err = gorm.Open("postgres", os.Getenv("DATABASE_URL") + "?sslmode=disable")
+        db, err = gorm.Open("postgres", os.Getenv("DATABASE_URL"))
         if err == nil {
             db.LogMode(true)
             return db

@@ -37,7 +37,4 @@ RUN mkdir -p /app/client/build
 COPY --from=webpack-build /app/build /app/client/build
 COPY --from=build-server /app/main  /app
 
-ENV PORT 8080
-EXPOSE 8080
-
 CMD /app/main

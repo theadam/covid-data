@@ -32,6 +32,8 @@ RUN chmod +x /app/main
 # Step 3, Put it all together
 FROM alpine:latest
 
+WORKDIR /app
+
 RUN mkdir -p /app/client/build
 
 COPY --from=webpack-build /app/build /app/client/build

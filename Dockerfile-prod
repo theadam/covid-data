@@ -19,7 +19,6 @@ WORKDIR /app
 
 RUN apk add build-base
 RUN apk add --no-cache git mercurial
-RUN go get github.com/cespare/reflex
 
 COPY ./go.mod ./go.sum /app/
 RUN go mod download

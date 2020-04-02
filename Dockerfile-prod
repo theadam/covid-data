@@ -25,15 +25,17 @@ RUN go mod download
 
 COPY . /app/
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -installsuffix cgo -o /app/loader ./cmd/loader/main.go
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -installsuffix cgo -o /app/main ./cmd/server/main.go
 
 RUN chmod +x /app/loader
 RUN chmod +x /app/main
 
 # Step 3, Put it all together
+FROM alpine:latest
+
 RUN mkdir -p /app/client/build
 
 COPY --from=webpack-build /app/build /app/client/build
+COPY --from=build-server /app/main  /app
 
 CMD /app/main

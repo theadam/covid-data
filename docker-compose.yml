@@ -13,6 +13,7 @@ services:
       - ./:/app
     environment:
       - DATABASE_URL=postgres://postgres:password@postgres:5432/covid?sslmode=disabled
+      - PORT=8080
 
   covid-client:
     container_name: covid-client

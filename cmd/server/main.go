@@ -10,5 +10,5 @@ func main() {
     defer db.Close()
 
     r := server.Router(db)
-    r.Run(":8080")
+    r.Run()
 }

@@ -11,6 +11,8 @@ services:
       - '8080:8080'
     volumes:
       - ./:/app
+    environment:
+      - DATABASE_URL=postgres://postgres:password@postgres:5432/covid
 
   covid-client:
     container_name: covid-client

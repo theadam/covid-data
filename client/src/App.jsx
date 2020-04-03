@@ -17,6 +17,10 @@ function App() {
         flex: 1;
         margin-left: 30px;
         margin-right: 30px;
+        @media only screen and (max-width: 1000px) {
+          margin-left: 10px;
+          margin-right: 10px;
+        }
         path {
           transition: fill 0.2s;
         }
@@ -26,8 +30,11 @@ function App() {
         .chart-tip {
           display: none;
         }
-        svg:hover + .chart-tip {
+        .map-container:hover + .chart-tip {
           display: block;
+        }
+        .rv-mouse-target {
+          touch-action: pan-x;
         }
       `}
     >

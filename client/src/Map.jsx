@@ -27,7 +27,7 @@ export default function Map({
   dataItem = 'confirmed',
   dataIdKey = 'countryCode',
 }) {
-  const { ref, path, height } = useProjection(projection);
+  const { ref, path, width, height } = useProjection(projection);
   const [tipLocation, setTipLocation] = React.useState(null);
   const firstData = React.useMemo(() => firstArray(data), [data]);
   const { play, playing, frame: index, setFrame: setIndex } = usePlayer(
@@ -53,44 +53,48 @@ export default function Map({
 
   return (
     <div style={{ position: 'relative' }} ref={ref}>
-      <div style={{ position: 'relative' }}>
-        <Loader loading={loading} />
-        <svg
-          height={height}
-          width="100%"
-          style={{
-            border: '1px solid #AAAAAA',
-            opacity: loading ? '50%' : undefined,
-          }}
-        >
-          <g height={height} width="100%">
-            <g height={height} width="100%">
-              {features.map((d, i) => {
-                const data = byCode[d.id];
-                return (
-                  <MapPath
-                    key={i}
-                    path={svgPaths[i]}
-                    data={data ? data.confirmed : null}
-                    topoData={d}
-                    max={max}
-                    onDataClick={onDataClick}
-                    onMouseOver={(e) => {
-                      if (tipLocation && tipLocation.id === d.id) return;
-                      setTipLocation({
-                        bounds: path.bounds(d),
-                        id: d.id,
-                        name: d.properties.name,
-                      });
-                    }}
-                  />
-                );
-              })}
+      <div
+        className="map-container"
+        style={{ border: '1px solid rgb(170, 170, 170)', display: 'flex' }}
+      >
+        <div style={{ position: 'relative', flex: 1 }}>
+          <Loader loading={loading} />
+          <svg
+            height={height}
+            width={width}
+            style={{
+              opacity: loading ? '50%' : undefined,
+            }}
+          >
+            <g height={height} width={width}>
+              <g height={height} width={width}>
+                {features.map((d, i) => {
+                  const data = byCode[d.id];
+                  return (
+                    <MapPath
+                      key={i}
+                      path={svgPaths[i]}
+                      data={data ? data.confirmed : null}
+                      topoData={d}
+                      max={max}
+                      onClick={data ? () => onDataClick(data) : undefined}
+                      onMouseOver={(e) => {
+                        if (tipLocation && tipLocation.id === d.id) return;
+                        setTipLocation({
+                          bounds: path.bounds(d),
+                          id: d.id,
+                          name: d.properties.name,
+                        });
+                      }}
+                    />
+                  );
+                })}
+              </g>
             </g>
-          </g>
-        </svg>
+          </svg>
+        </div>
       </div>
-      {tipLocation && (!hideEmptyTip || tipData) && (
+      {!loading && tipLocation && (!hideEmptyTip || tipData) && (
         <MapTip
           hideEmptyTip
           emptyText="No Cases"

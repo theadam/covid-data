@@ -12,7 +12,7 @@ const flexDirection = css`
     flex-direction: column;
     .chart {
       margin-left: 0;
-      margin-top: 40px;
+      margin-top: 10px;
     }
   }
 `;

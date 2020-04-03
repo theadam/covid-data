@@ -5,7 +5,7 @@ export default function MapPath({
   path,
   data,
   max,
-  onDataClick,
+  onClick,
   topoData,
   onMouseOver,
 }) {
@@ -23,14 +23,8 @@ export default function MapPath({
       }
       strokeWidth={0.3}
       stroke="#AAAAAA"
-      cursor={onDataClick && data ? 'pointer' : undefined}
-      onClick={
-        onDataClick && data
-          ? () => {
-              onDataClick(data);
-            }
-          : undefined
-      }
+      cursor={onClick && data ? 'pointer' : undefined}
+      onClick={onClick}
       onMouseOver={onMouseOver}
     />
   );

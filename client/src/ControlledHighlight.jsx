@@ -48,5 +48,35 @@ export default class ControlledHighlight extends Highlight {
       });
     }
   }
-}
 
+  render() {
+    const result = super.render();
+    const rect = result.props.children[0];
+    const newRect = {
+      ...rect,
+      props: {
+        ...rect.props,
+        onTouchStart: (e) => {
+          e.nativeEvent.pageX = e.nativeEvent.touches[0].pageX;
+          e.nativeEvent.pageY = e.nativeEvent.touches[0].pageY;
+          e.preventDefault();
+          this.startBrushing(e);
+        },
+        onTouchMove: (e) => {
+          e.nativeEvent.offsetX = e.nativeEvent.touches[0].pageX;
+          e.nativeEvent.offsetY = e.nativeEvent.touches[0].pageY;
+          e.preventDefault();
+          this.onBrush(e);
+        },
+      },
+    };
+    const newResult = {
+      ...result,
+      props: {
+        ...result.props,
+        children: [newRect, ...result.props.children.slice(1)],
+      },
+    };
+    return newResult;
+  }
+}

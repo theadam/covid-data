@@ -17,6 +17,7 @@ import {
 import { css } from 'emotion';
 import ControlledHighlight from './ControlledHighlight';
 import Loader from './Loader';
+import { firstArray } from './utils';
 
 const legendClass = css`
   text-align: right;
@@ -181,7 +182,7 @@ export default function ({
       <div>
         <Plot
           animation
-          height={350}
+          height={window.innerWidth < 1000 ? 185 : 350}
           xDomain={domain && [domain.left, domain.right]}
           yDomain={domain && getYDomain(data, [domain.left, domain.right])}
         >
@@ -249,6 +250,7 @@ export default function ({
       </div>
       <div>
         <Brusher
+          domain={domain}
           setDomain={setDomain}
           brushing={brushing}
           data={data}
@@ -265,42 +267,73 @@ export default function ({
   );
 }
 
-const Brusher = React.memo(({ setDomain, brushing, data, items }) => {
-  const [area, setArea] = React.useState(() => getInitialDomain(data));
-  React.useEffect(() => {
-    setArea(getInitialDomain(data));
-  }, [data]);
+function isValid(data, area) {
+  if (!area) return null;
+  const first = firstArray(data);
+  return area.left >= 0 && area.right <= first.length - 1;
+}
 
-  return (
-    <Plot animation height={100} style={{ overflow: 'visible' }}>
-      {items.map((name, i) => (
-        <LineSeries
-          key={name}
-          curve={curveCatmullRom.alpha(0.5)}
-          data={data[name]}
+const Brusher = React.memo(
+  ({ setDomain: rawSetDomain, domain, brushing, data, items }) => {
+    const [area, rawSetArea] = React.useState(() => getInitialDomain(data));
+    const setArea = React.useMemo(
+      () => (v, domain) => {
+        if (!isValid(data, v)) {
+          return rawSetArea(domain);
+        }
+        rawSetArea(v);
+      },
+      [rawSetArea, data],
+    );
+    const setDomain = React.useMemo(
+      () => (v) => {
+        if (!isValid(data, v)) {
+          return;
+        }
+        rawSetDomain(v);
+      },
+      [rawSetDomain, data],
+    );
+    React.useEffect(() => {
+      setArea(getInitialDomain(data));
+    }, [setArea, data]);
+
+    return (
+      <Plot
+        animation
+        height={window.innerWidth < 1000 ? 60 : 100}
+        style={{ overflow: 'visible' }}
+        margin={{ left: 40, right: 10, top: 10, bottom: 0 }}
+      >
+        {items.map((name, i) => (
+          <LineSeries
+            key={name}
+            curve={curveCatmullRom.alpha(0.5)}
+            data={data[name]}
+          />
+        ))}
+        <ControlledHighlight
+          drag
+          key="highlight"
+          area={area}
+          enableY={false}
+          onBrushStart={() => {
+            brushing.current = true;
+          }}
+          onBrushEnd={(area) => {
+            brushing.current = false;
+            setArea(area, domain);
+            setDomain(area);
+          }}
+          onDrag={(a) => {
+            setDomain(a);
+          }}
+          onDragEnd={(a) => {
+            setArea(a, domain);
+            setDomain(a);
+          }}
         />
-      ))}
-      <ControlledHighlight
-        drag
-        key="highlight"
-        area={area}
-        enableY={false}
-        onBrushStart={() => {
-          brushing.current = true;
-        }}
-        onBrushEnd={(area) => {
-          brushing.current = false;
-          setArea(area);
-          setDomain(area);
-        }}
-        onDrag={(a) => {
-          setDomain(a);
-        }}
-        onDragEnd={(a) => {
-          setArea(a);
-          setDomain(a);
-        }}
-      />
-    </Plot>
-  );
-});
+      </Plot>
+    );
+  },
+);

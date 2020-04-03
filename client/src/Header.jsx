@@ -17,6 +17,10 @@ export default function Header() {
       css={css`
         margin-top: 30px;
         margin-bottom: 50px;
+        @media only screen and (max-width: 1000px) {
+          margin-top: 10px;
+          margin-bottom: 20px;
+        }
         display: flex;
       `}
     >
@@ -33,6 +37,9 @@ export default function Header() {
         <div
           css={css`
             font-size: 40px;
+            @media only screen and (max-width: 1000px) {
+              font-size: 20px;
+            }
             color: #333;
             font-weight: bold;
           `}
@@ -47,6 +54,10 @@ export default function Header() {
             flex-direction: row;
             a {
               margin-left: 20px;
+              @media only screen and (max-width: 1000px) {
+                margin-left: 5px;
+                font-size: 10px;
+              }
               text-decoration: none;
               color: #1e88e5;
               padding: 4px 8px;

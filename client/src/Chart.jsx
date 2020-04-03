@@ -189,6 +189,11 @@ export default function ({
           <HorizontalGridLines />
           <VerticalGridLines />
           <XAxis
+            style={{
+              text: {
+                fontSize: window.innerWidth < 1000 ? 7 : 11,
+              },
+            }}
             tickFormat={(i) => {
               if (data[items[0]][i]) {
                 return data[items[0]][i].formattedDate;

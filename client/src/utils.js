@@ -35,7 +35,7 @@ export function getDataIndex(data, index) {
 export function mapBy(finals, key) {
   const result = {};
   finals.forEach((final) => {
-    if (!final[key]) return;
+    if (!final || !final[key]) return;
     result[final[key]] = final;
   });
   return result;

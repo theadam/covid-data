@@ -173,7 +173,11 @@ export default function ({
       }),
     [baseData, chartedCountries],
   );
-  const [domain, setDomain] = React.useState(() => getInitialDomain(data));
+  const [domain, rawSetDomain] = React.useState(() => getInitialDomain(data));
+  function setDomain(d) {
+    setCrosshairValues([]);
+    rawSetDomain(d);
+  }
   React.useEffect(() => {
     setDomain(getInitialDomain(data));
   }, [data]);

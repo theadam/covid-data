@@ -57,16 +57,29 @@ export default class ControlledHighlight extends Highlight {
       props: {
         ...rect.props,
         onTouchStart: (e) => {
-          e.nativeEvent.pageX = e.nativeEvent.touches[0].pageX;
-          e.nativeEvent.pageY = e.nativeEvent.touches[0].pageY;
+          const evt = {
+            ...e,
+            nativeEvent: {
+              ...e.nativeEvent,
+              type: 'touchstart',
+              pageX: e.nativeEvent.touches[0].pageX,
+              pageY: e.nativeEvent.touches[0].pageY,
+            },
+          };
           e.preventDefault();
-          this.startBrushing(e);
+          this.startBrushing(evt);
         },
         onTouchMove: (e) => {
-          e.nativeEvent.offsetX = e.nativeEvent.touches[0].pageX;
-          e.nativeEvent.offsetY = e.nativeEvent.touches[0].pageY;
+          const evt = {
+            ...e,
+            nativeEvent: {
+              ...e.nativeEvent,
+              offsetX: e.nativeEvent.touches[0].pageX,
+              offsetY: e.nativeEvent.touches[0].pageY,
+            },
+          };
           e.preventDefault();
-          this.onBrush(e);
+          this.onBrush(evt);
         },
       },
     };

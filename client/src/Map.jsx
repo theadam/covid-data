@@ -1,4 +1,5 @@
 import React from 'react';
+import { css } from '@emotion/core';
 
 import MapPath from './MapPath';
 import MapTip from './MapTip';
@@ -52,7 +53,13 @@ export default function Map({
   const tipData = tipLocation ? byCode[tipLocation.id] : null;
 
   return (
-    <div style={{ position: 'relative' }} ref={ref}>
+    <div
+      css={css`
+        user-select: none;
+      `}
+      style={{ position: 'relative' }}
+      ref={ref}
+    >
       <div
         className="map-container"
         style={{ border: '1px solid rgb(170, 170, 170)', display: 'flex' }}
@@ -110,7 +117,7 @@ export default function Map({
         index={index}
         length={firstData.length}
         setIndex={setIndex}
-        valueLabelFormat={formatIndex}
+        formatLabel={formatIndex}
         hideTip={loading}
       />
     </div>

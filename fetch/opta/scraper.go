@@ -5,6 +5,7 @@ import (
 	"covid-tracker/utils"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -14,7 +15,7 @@ import (
 
 func ignoreCounty(s string, c string) bool {
 	return c == "Unassigned" ||
-        c == "unassigned" ||
+		c == "unassigned" ||
 		c == "Unknown" ||
 		s == "Diamond Princess" ||
 		s == "Grand Princess" ||
@@ -38,22 +39,23 @@ var fullOverride = map[[2]string][2]string{
 
 var overrides = map[string]map[string]string{
 	"AK": map[string]string{
-		"Kenai":      "Kenai Peninsula",
-		"Seward":      "Kenai Peninsula",
-		"Homer":       "Kenai Peninsula",
-		"Soldotna":    "Kenai Peninsula",
-		"Sterling":    "Kenai Peninsula",
-		"Palmer":      "Anchorage",
-		"Eagle River": "Anchorage",
-		"North Pole":  "Fairbanks North Star",
-		"Gridwood":    "Anchorage",
-        "Wasilla": "Matanuska-Susitna",
+        //		"Kenai":       "Kenai Peninsula",
+        //		"Seward":      "Kenai Peninsula",
+        //		"Homer":       "Kenai Peninsula",
+        //		"Soldotna":    "Kenai Peninsula",
+        //		"Sterling":    "Kenai Peninsula",
+        //		"Palmer":      "Anchorage",
+        //		"Eagle River": "Anchorage",
+        //		"Anchorage--Eagle River": "Anchorage",
+        //		"North Pole":  "Fairbanks North Star",
+        //		"Gridwood":    "Anchorage",
+        //		"Wasilla":     "Matanuska-Susitna",
 	},
 	"IA": map[string]string{
-		"Obrien": "O'Brien",
+        "Obrien": "O'Brien",
 	},
 	"ID": map[string]string{
-		"Adam": "Adams",
+        "Adam": "Adams",
 	},
 	"IL": map[string]string{
 		"La Salle": "LaSalle",
@@ -64,11 +66,13 @@ var overrides = map[string]map[string]string{
 	"KY": map[string]string{
 		"Northern Kentucky": "Unassigned",
 	},
+	"LA": map[string]string{
+		"Parish Under Investigation": "Unassigned",
+	},
 	"MA": map[string]string{
 		"Dukes and Nantucket": "Dukes",
 	},
 	"MI": map[string]string{
-		"Wayne--Detroit": "Wayne",
 		"Other":          "Unassigned",
 	},
 	"MO": map[string]string{
@@ -81,8 +85,9 @@ var overrides = map[string]map[string]string{
 		"Filmore": "Fillmore",
 	},
 	"NH": map[string]string{
-		"Manchester": "Hillsborough",
-		"Nashua": "Hillsborough",
+		"Hillsborough-other":     "Hillsborough",
+		"Hillsborough-Manchester":     "Hillsborough",
+		"Hillsborough-Nashua":     "Hillsborough",
 	},
 	"OK": map[string]string{
 		"Out-of-State": "Unassigned",
@@ -102,7 +107,7 @@ var overrides = map[string]map[string]string{
 	"UT": map[string]string{
 		"Weber-Morgan":         "Weber",
 		"Southwest Utah":       "Unassigned",
-		"Central Utah":       "Unassigned",
+		"Central Utah":         "Unassigned",
 		"TriCounty":            "Uintah",
 		"Grant":                "Grand",
 		"Unitah":               "Uintah",
@@ -138,51 +143,56 @@ var overrides = map[string]map[string]string{
 		"Petersburg":      "Petersburg City",
 		"Waynesboro":      "Waynesboro City",
 		"Charke":          "Clarke",
-		"Covington":          "Covington City",
+		"Covington":       "Covington City",
+		"Emporia":       "Emporia City",
+		"Lexington":       "Lexington City",
+		"Salem":          "Roanoke",
 	},
 }
 
 type preOptaItem struct {
-	Id            int    `json:"id"`
-	ConfirmedDate string `json:"confirmed_date"`
-	PeopleCount   int    `json:"people_count"`
-	DeathCount    int    `json:"die_count"`
-	Comments      string `json:"comments_en"`
-	State         string `json:"state_name"`
-	County        string `json:"county"`
-	Num           int    `json:"num"`
+	Id             int    `json:"id"`
+	ConfirmedDate  string `json:"confirmed_date"`
+	PeopleCount    int    `json:"people_count"`
+	DeathCount     int    `json:"die_count"`
+	Comments       string `json:"comments_en"`
+	State          string `json:"state_name"`
+	County         string `json:"county"`
+	RecoveredCount int    `json:"cured_count"`
+	Num            int    `json:"num"`
 }
 
 type optaItem struct {
-	Id            int    `json:"id"`
-	ConfirmedDate string `json:"confirmed_date"`
-	PeopleCount   int    `json:"people_count"`
-	DeathCount    int    `json:"die_count"`
-	Comments      string `json:"comments_en"`
-	State         string `json:"state_name"`
-	County        string `json:"county"`
-	Num           int    `json:"num"`
-    Orig string
+	Id             int    `json:"id"`
+	ConfirmedDate  string `json:"confirmed_date"`
+	PeopleCount    int    `json:"people_count"`
+	DeathCount     int    `json:"die_count"`
+	Comments       string `json:"comments_en"`
+	State          string `json:"state_name"`
+	County         string `json:"county"`
+	RecoveredCount int    `json:"cured_count"`
+	Num            int    `json:"num"`
+	Orig           string
 }
 
 func (o *optaItem) UnmarshalJSON(data []byte) error {
-    var v preOptaItem
-    err := json.Unmarshal(data, &v)
-    if err != nil {
-        return err
-    }
+	var v preOptaItem
+	err := json.Unmarshal(data, &v)
+	if err != nil {
+		return err
+	}
 	o.Id = v.Id
 	o.ConfirmedDate = v.ConfirmedDate
-	o.PeopleCount = v.PeopleCount
+	o.PeopleCount = 0
 	o.DeathCount = v.DeathCount
+	o.RecoveredCount = v.DeathCount
 	o.Comments = v.Comments
 	o.State = v.State
 	o.County = v.County
 	o.Num = v.Num
-    o.Orig = string(data)
-    return nil
+	o.Orig = string(data)
+	return nil
 }
-
 
 const MAIN_URL = "https://coronavirus.1point3acres.com"
 const JS_PREFIX = "/_next/static/"
@@ -199,24 +209,113 @@ func jsChunks(html string) []string {
 	return jsRegexp.FindAllString(html, -1)
 }
 
+func unique(strSlice []string) []string {
+	keys := make(map[string]bool)
+	list := []string{}
+	for _, entry := range strSlice {
+		if _, value := keys[entry]; !value {
+			keys[entry] = true
+			list = append(list, entry)
+		}
+	}
+	return list
+}
+
 func chunkUrls(chunks []string) []string {
 	for i, chunk := range chunks {
 		chunks[i] = MAIN_URL + JS_PREFIX + chunk
 	}
-	return chunks
+	return unique(chunks)
 }
 
-func fetchStrings(urls []string) ([]string, error) {
+func fetchStrings(urls []string) []string {
 	data := make([]string, len(urls))
 
 	for i, url := range urls {
 		result, err := utils.FetchString(url)
 		if err != nil {
-			return nil, err
+			panic(err.Error())
 		}
 		data[i] = result
 	}
-	return data, nil
+	return data
+}
+
+func Unmarshal(jsonString string, v interface{}) error {
+	data := cleanData(jsonString)
+	cleaned := strings.ReplaceAll(data, `"`, `\u0022`)
+	unquoted, err := strconv.Unquote(`"` + cleaned + `"`)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal([]byte(unquoted), v)
+}
+
+func prettyJson(jsonString string) string {
+	var v interface{}
+	err := Unmarshal(jsonString, &v)
+	if err != nil {
+		fmt.Println(jsonString)
+		panic("Failed to unmarshal pretty json: " + err.Error())
+	}
+	res, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		fmt.Println(jsonString)
+		panic("Failed to marshal pretty json: " + err.Error())
+	}
+	return string(res)
+}
+
+func auditAllJson(content string) {
+	pieces := strings.Split(content, "JSON.parse('")[1:]
+	for i, piece := range pieces {
+		jsonString := strings.Split(piece, "')")[0]
+		var result interface{}
+		err := Unmarshal(jsonString, &result)
+		if err != nil {
+			panic(err.Error())
+		}
+
+		var item interface{}
+		switch v := reflect.ValueOf(result); v.Kind() {
+		case reflect.Map:
+			{
+				m := make(map[string]interface{})
+				iter := v.MapRange()
+				iter.Next()
+				m[iter.Key().String()] = iter.Value().Interface()
+				item = m
+			}
+		case reflect.Slice:
+			{
+				item = v.Index(0).Interface()
+			}
+		default:
+			{
+				fmt.Println(prettyJson(jsonString))
+				panic("Unahndled kind: " + v.Kind().String())
+			}
+		}
+		res, err := json.Marshal(item)
+		if err != nil {
+			fmt.Println(prettyJson(jsonString))
+			panic(err.Error())
+		}
+		fmt.Println("\t" + strconv.Itoa(i) + ": " + string(res))
+		fmt.Println()
+	}
+}
+
+func auditJs(urls []string, contents []string) {
+	for i, url := range urls {
+		content := contents[i]
+		if isValidJsData(content) {
+			fmt.Println("URL: " + url)
+			auditAllJson(content)
+			fmt.Println()
+		}
+	}
+	panic("Auditing")
 }
 
 func isValidJsData(data string) bool {
@@ -246,30 +345,62 @@ func cleanData(jsData string) string {
 	return str
 }
 
-func toJsonString(jsData string) (string, string, error) {
-	confirmedRes := strings.Split(jsData, "JSON.parse('")[3]
+func toJsonString(jsData string) (string, []string) {
+	pieces := strings.Split(jsData, "JSON.parse('")[1:]
+
+	confirmedRes := pieces[6]
 	confirmed := strings.Split(confirmedRes, "')}")[0]
 
-	deathsRes := strings.Split(jsData, "JSON.parse('")[5]
+	deathsRes := pieces[3]
 	deaths := strings.Split(deathsRes, "')}")[0]
 
-	return cleanData(confirmed), cleanData(deaths), nil
+	curedRes := pieces[7]
+	recovered := strings.Split(curedRes, "')}")[0]
+
+	return confirmed, []string{deaths, recovered}
 }
 
-func toOpta(jsonString string) ([]optaItem, error) {
+func getFirstString(slice interface{}) string {
+	first := reflect.ValueOf(slice).Index(0).Interface().(string)
+	return first
+}
+
+func convertConfirmed(jsonString string) []optaItem {
+	dateRegexp, _ := regexp.Compile(`\d{1,2}/\d{1,2}`)
+	var data []map[string]interface{}
+	err := Unmarshal(jsonString, &data)
+	if err != nil {
+		panic("Failed to parse confirmed: " + err.Error())
+	}
+
+	results := make([]optaItem, 0)
+	for _, item := range data {
+		orig, _ := json.Marshal(item)
+		state := getFirstString(item["state_name"])
+		county := getFirstString(item["county"])
+
+		for key, val := range item {
+			if dateRegexp.MatchString(key) {
+				results = append(results, optaItem{
+					State:         state,
+					County:        county,
+					PeopleCount:   int(reflect.ValueOf(val).Float()),
+					ConfirmedDate: key,
+					Orig:          string(orig),
+				})
+			}
+		}
+	}
+	return results
+}
+
+func toOpta(jsonString string) []optaItem {
 	var optas []optaItem
-
-	unquoted, err := strconv.Unquote("`" + jsonString + "`")
+	err := Unmarshal(jsonString, &optas)
 	if err != nil {
-		return nil, err
+		panic(err.Error())
 	}
-	dec := json.NewDecoder(strings.NewReader(unquoted))
-	err = dec.Decode(&optas)
-	if err != nil {
-		return nil, err
-	}
-
-	return optas, nil
+	return optas
 }
 
 func checkList(optaList []optaItem) bool {
@@ -285,6 +416,7 @@ func checkList(optaList []optaItem) bool {
 func convertItem(item optaItem, i int, length int) (data.CountyData, error) {
 	date, err := time.Parse(TIME_LAYOUT, item.ConfirmedDate+"/2020")
 	if err != nil {
+		fmt.Println(item.Orig)
 		return data.CountyData{}, err
 	}
 	county := strings.ReplaceAll(item.County, "\u200b", "")
@@ -296,6 +428,12 @@ func convertItem(item optaItem, i int, length int) (data.CountyData, error) {
 		county = override[1]
 		state = override[0]
 	}
+
+    if strings.Contains(county, "--") {
+        county = strings.Split(county, "--")[0]
+    }
+
+    county = strings.TrimSpace(county)
 
 	stateOverride, ok := overrides[state]
 	if ok {
@@ -423,34 +561,22 @@ func mapData(items []data.CountyData) map[time.Time]map[string]data.CountyData {
 	return result
 }
 
-func GetData() ([]data.CountyData, error) {
+func GetData(start time.Time) ([]data.CountyData, error) {
 	html, err := mainPageHtml()
 	if err != nil {
 		return nil, err
 	}
 
 	urls := chunkUrls(jsChunks(html))
-	jsData, err := fetchStrings(urls)
-	if err != nil {
-		return nil, err
-	}
+	jsData := fetchStrings(urls)
 
-	confirmedString, deathsString, err := toJsonString(filterValidData(jsData))
-	if err != nil {
-		return nil, err
-	}
+	confirmedString, rest := toJsonString(filterValidData(jsData))
 
-	confirmedData, err := toOpta(confirmedString)
-	if err != nil {
-		return nil, err
-	}
+	optaData := convertConfirmed(confirmedString)
 
-	deathsData, err := toOpta(deathsString)
-	if err != nil {
-		return nil, err
+	for _, d := range rest {
+		optaData = append(optaData, toOpta(d)...)
 	}
-
-	optaData := append(confirmedData, deathsData...)
 
 	result, err := convertItems(optaData)
 	if err != nil {
@@ -467,10 +593,12 @@ func GetData() ([]data.CountyData, error) {
 
 	runningConfirmed := make(map[string]int)
 	runningDeaths := make(map[string]int)
+	runningRecovered := make(map[string]int)
 
 	for key, _ := range keys {
 		runningConfirmed[key] = 0
 		runningDeaths[key] = 0
+		runningRecovered[key] = 0
 	}
 
 	newresult := make([]data.CountyData, 0)
@@ -481,8 +609,11 @@ func GetData() ([]data.CountyData, error) {
 		for key, base := range keys {
 			val, ok := keyMap[key]
 			if ok {
-				runningConfirmed[key] += val.Confirmed
+                if val.Confirmed != 0 {
+                    runningConfirmed[key] = val.Confirmed
+                }
 				runningDeaths[key] += val.Deaths
+				runningRecovered[key] += val.Recovered
 				val.Confirmed = runningConfirmed[key]
 				val.Deaths = runningDeaths[key]
 				newresult = append(newresult, val)
@@ -494,6 +625,7 @@ func GetData() ([]data.CountyData, error) {
 					County:     base.County,
 					Confirmed:  runningConfirmed[key],
 					Deaths:     runningDeaths[key],
+					Recovered:  runningRecovered[key],
 					Date:       date,
 					CountyKey:  base.CountyKey,
 					FipsId:     base.FipsId,
@@ -503,6 +635,8 @@ func GetData() ([]data.CountyData, error) {
 
 		date = date.AddDate(0, 0, 1)
 	}
+
+    newresult = utils.FilterCountyDataByDate(newresult, start)
 
 	return newresult, nil
 }

@@ -14,16 +14,20 @@ import {
   Crosshair,
   MarkSeries,
 } from 'react-vis';
-import { css } from 'emotion';
+import { css as globalCss } from 'emotion';
 import ControlledHighlight from './ControlledHighlight';
 import Loader from './Loader';
 import { firstArray } from './utils';
 
-const legendClass = css`
+const legendClass = globalCss`
   text-align: right;
 `;
 
-const crosshairClass = css`
+const noSelect = globalCss`
+  user-select: none;
+`;
+
+const crosshairClass = globalCss`
   .rv-crosshair__line {
     // z-index: -1;
     position: relative;
@@ -177,7 +181,10 @@ export default function ({
   const items = Object.keys(data);
 
   return (
-    <div className="chart" style={{ flex: 1, position: 'relative' }}>
+    <div
+      className={`chart ${noSelect}`}
+      style={{ flex: 1, position: 'relative' }}
+    >
       <Loader loading={loading} />
       <div>
         <Plot

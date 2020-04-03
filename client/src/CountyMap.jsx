@@ -23,7 +23,9 @@ export default function CountyMap({ loading, data, onDataClick }) {
         projection={projection}
         features={countyFeatures}
         onDataClick={onDataClick}
-        formatIndex={(i) => formatDate(firstData[i].date)}
+        formatIndex={(i) =>
+          firstData[i] ? formatDate(firstData[i].date) : null
+        }
         dataIdKey="fipsId"
         hideEmptyTip
         tipTitleFn={(_, d) => `${d.county}, ${d.state}`}

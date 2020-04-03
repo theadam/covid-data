@@ -261,9 +261,11 @@ func consolidatePoints(points []data.DataPoint) []data.DataPoint {
 	return result
 }
 
-func GetData() ([]data.DataPoint, error) {
+func GetData(start time.Time) ([]data.DataPoint, error) {
     master, err := fetchAll()
     if err != nil { return nil, err }
+
+    master = utils.FilterDataPointByDate(master, start)
 
     return consolidatePoints(master), nil
 }

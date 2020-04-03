@@ -24,7 +24,9 @@ export default function WorldMap({ data, onDataClick, loading }) {
         projection={projection}
         features={worldFeatures}
         onDataClick={onDataClick}
-        formatIndex={(i) => formatDate(firstData[i].date)}
+        formatIndex={(i) =>
+          firstData[i] ? formatDate(firstData[i].date) : null
+        }
       />
     </div>
   );

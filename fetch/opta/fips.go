@@ -23,7 +23,7 @@ func cleanCounty(c string) string {
     c = pattern.ReplaceAllString(c, "")
 
     pattern, _ = regexp.Compile(" city$")
-    return pattern.ReplaceAllString(c, " City")
+    return strings.TrimSpace(pattern.ReplaceAllString(c, " City"))
 }
 
 type FipsData struct {

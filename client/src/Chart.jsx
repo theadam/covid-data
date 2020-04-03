@@ -16,6 +16,7 @@ import {
 } from 'react-vis';
 import { css } from 'emotion';
 import ControlledHighlight from './ControlledHighlight';
+import Loader from './Loader';
 
 const legendClass = css`
   text-align: right;
@@ -102,6 +103,7 @@ function pick(map, items) {
 }
 
 function makeWorldData(data) {
+  if (!data) return { World: [] };
   const keys = Object.keys(data);
 
   const result = [];
@@ -141,7 +143,12 @@ function moveDate(date, override) {
   return parsed.toISOString();
 }
 
-export default function ({ data: baseData, chartedCountries, onLegendClick }) {
+export default function ({
+  loading,
+  data: baseData,
+  chartedCountries,
+  onLegendClick,
+}) {
   const [crosshairValues, setCrosshairValues] = React.useState([]);
   const brushing = React.useRef(false);
   const data = React.useMemo(
@@ -162,15 +169,19 @@ export default function ({ data: baseData, chartedCountries, onLegendClick }) {
     [baseData, chartedCountries],
   );
   const [domain, setDomain] = React.useState(() => getInitialDomain(data));
+  React.useEffect(() => {
+    setDomain(getInitialDomain(data));
+  }, [data]);
 
   const items = Object.keys(data);
 
   return (
-    <div style={{ paddingLeft: 20, paddingRight: 20, flex: 1 }}>
+    <div className="chart" style={{ flex: 1, position: 'relative' }}>
+      <Loader loading={loading} />
       <div>
         <Plot
           animation
-          height={300}
+          height={350}
           xDomain={domain && [domain.left, domain.right]}
           yDomain={domain && getYDomain(data, [domain.left, domain.right])}
         >
@@ -256,6 +267,9 @@ export default function ({ data: baseData, chartedCountries, onLegendClick }) {
 
 const Brusher = React.memo(({ setDomain, brushing, data, items }) => {
   const [area, setArea] = React.useState(() => getInitialDomain(data));
+  React.useEffect(() => {
+    setArea(getInitialDomain(data));
+  }, [data]);
 
   return (
     <Plot animation height={100} style={{ overflow: 'visible' }}>

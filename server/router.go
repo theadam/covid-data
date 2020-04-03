@@ -223,12 +223,13 @@ func (env *Env) GetCountyHistorical(c *gin.Context) {
 		Select(`
             date,
             fips_id,
-            CASE WHEN state = '' THEN 'Unknown' ELSE state END as state,
-            CASE WHEN county = '' THEN 'Unknown' ELSE county END as county,
+            state,
+            county,
             sum(confirmed) as confirmed,
             sum(deaths) as deaths
         `).
         Model(&data.CountyCases).
+        Where("fips_id != ''").
 		Group("date, state, county, fips_id").
 		Order("date, state, county, fips_id")
 

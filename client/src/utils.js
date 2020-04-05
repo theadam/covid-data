@@ -107,6 +107,9 @@ export function useProjection(projection) {
   const [path, setPath] = React.useState(() =>
     geoPath().projection(projection),
   );
+  React.useEffect(() => {
+    setPath(() => geoPath().projection(projection));
+  }, [projection]);
   const [height, setHeight] = React.useState(null);
   const setWidth = React.useMemo(
     () => (width) => {
@@ -150,3 +153,48 @@ export function usePrevious(value) {
   });
   return ref.current;
 }
+
+export function scaleXy([x, y], scale) {
+  return [x * scale, y * scale];
+}
+
+export function translateXy([x, y], translate) {
+  return [x + translate[0], y + translate[1]];
+}
+
+export function transformXy(xy, transform) {
+  return translateXy(
+    scaleXy(xy, transform.scale),
+    transform.translate.map((t) => t),
+  );
+}
+
+export function transformBounds(bounds, transform) {
+  return bounds.map((xy) => transformXy(xy, transform));
+}
+
+export function covidTipInfo(data, showNoCases) {
+  if (!data) {
+    if (showNoCases) {
+      return <div>No Cases</div>;
+    } else {
+      return null;
+    }
+  }
+  return (
+    <>
+      <div>{data.confirmed} Confirmed Cases</div>
+      <div>{data.deaths} Fatalities</div>
+    </>
+  );
+}
+
+const covidTipMaker = (showNoCases) => (feature, data) => {
+  return {
+    title: feature.properties.name,
+    info: covidTipInfo(data, showNoCases),
+  };
+};
+
+export const covidTip = covidTipMaker(false);
+export const covidTipIncludingNoCases = covidTipMaker(true);

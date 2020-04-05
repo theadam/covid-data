@@ -154,22 +154,47 @@ func (env *Env) GetStateData(c *gin.Context) {
 	c.JSON(200, results)
 }
 
+type StateFips struct {
+    State     string
+    FipsId    string
+}
+
+func stateFipsMap(db *gorm.DB) map[string]StateFips {
+    var fipsData []StateFips
+    db.
+        Select("state, min(substring(fips_id from 1 for 2)) as fips_id").
+        Where("fips_id != ''").
+        Model(&data.CountyCases).
+        Group("state").
+        Scan(&fipsData)
+	fipsMap := make(map[string]StateFips)
+
+    for _, item := range fipsData {
+        fipsMap[item.State] = item
+    }
+    return fipsMap
+}
+
 func (env *Env) GetStateHistorical(c *gin.Context) {
 	type shape struct {
 		State     string `json:"state"`
+		FipsId    string    `json:"fipsId"`
 		Date      string `json:"date"`
 		Confirmed int    `json:"confirmed"`
 		Deaths    int    `json:"deaths"`
 	}
 
+    fipsMap := stateFipsMap(env.db)
+
 	var results []shape
 	query := env.db.
 		Select(`
             date,
-            CASE WHEN state = '' THEN 'Unknown' ELSE state END as state,
+            state,
             sum(confirmed) as confirmed,
             sum(deaths) as deaths
             `).
+            Where("state != ''").
             Model(&data.CountyCases).
             Group("date, state").
             Order("date, state")
@@ -180,7 +205,24 @@ func (env *Env) GetStateHistorical(c *gin.Context) {
 
 	query.Scan(&results)
 
-	c.JSON(200, results)
+
+	obj := make(map[string][]shape)
+
+	for _, item := range results {
+        stateFips := fipsMap[item.State]
+        if stateFips.FipsId == "" { continue }
+
+        item.FipsId = stateFips.FipsId
+		slice, ok := obj[item.FipsId]
+		if !ok {
+			slice = make([]shape, 0)
+		}
+		slice = append(slice, item)
+		obj[item.FipsId] = slice
+	}
+
+
+	c.JSON(200, obj)
 }
 
 func (env *Env) GetCountyData(c *gin.Context) {

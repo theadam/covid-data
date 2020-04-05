@@ -24,13 +24,13 @@ function App() {
         path {
           transition: fill 0.2s;
         }
-        path:hover {
+        path.highlight:hover {
           opacity: 0.5;
         }
-        .chart-tip {
+        .map-tip {
           display: none;
         }
-        .map-container:hover + .chart-tip {
+        .map-container:hover + .map-tip {
           display: block;
         }
         .rv-mouse-target {

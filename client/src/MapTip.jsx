@@ -1,23 +1,29 @@
 import React from 'react';
 
-export default function MapTip({ bounds, height, title, info, emptyText }) {
+function calculateTransform(bounds, height) {
+  if (bounds === null) return null;
   const [[x1, y1], [x2, y2]] = bounds;
   const yOffset = y1 + (y2 - y1) / 2 > height / 2 ? -(height / 6) : height / 6;
+  return `translate(${x1 + (x2 - x1) / 2}px,${
+    (y2 > height / 2 ? y1 : y2) + yOffset
+  }px`;
+}
+
+export default function MapTip({ bounds, height, title, info }) {
+  const transform = calculateTransform(bounds, height);
 
   return (
     <div
       style={{
+        display: !info ? 'none' : undefined,
         position: 'absolute',
         left: 0,
         top: 0,
-        transform: `translate(${x1 + (x2 - x1) / 2}px,${
-          (y2 > height / 2 ? y1 : y2) + yOffset
-        }px`,
+        transform,
         transition: 'transform 0.3s',
         pointerEvents: 'none',
-        whiteSpace: 'pre',
       }}
-      className="chart-tip"
+      className="map-tip"
     >
       <div
         style={{
@@ -31,8 +37,7 @@ export default function MapTip({ bounds, height, title, info, emptyText }) {
         }}
       >
         <span style={{ fontWeight: 'bold' }}>{title}</span>
-        {info && info.map((val, k) => <span key={k}>{`\n${val}`}</span>)}
-        {!info && `\n${emptyText}`}
+        {info}
       </div>
     </div>
   );

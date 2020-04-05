@@ -4,10 +4,10 @@ import * as topojson from 'topojson';
 import worldData from './data/countries-110m.json';
 
 import Map from './Map';
-import { formatDate, firstArray } from './utils';
+import FeatureSet from './FeatureSet';
+import { covidTipIncludingNoCases, formatDate, firstArray } from './utils';
 
 const projection = proj();
-
 const worldFeatures = topojson.feature(
   topojson.simplify(topojson.presimplify(worldData)),
   worldData.objects.countries,
@@ -19,15 +19,21 @@ export default function WorldMap({ data, onDataClick, loading }) {
   return (
     <div className="world-map" style={{ flex: 1 }}>
       <Map
-        data={data}
         loading={loading}
+        data={data}
         projection={projection}
-        features={worldFeatures}
-        onDataClick={onDataClick}
         formatIndex={(i) =>
           firstData[i] ? formatDate(firstData[i].date) : null
         }
-      />
+      >
+        <FeatureSet
+          data={data}
+          features={worldFeatures}
+          calculateTip={covidTipIncludingNoCases}
+          onDataClick={onDataClick}
+          getHighlight={() => true}
+        />
+      </Map>
     </div>
   );
 }

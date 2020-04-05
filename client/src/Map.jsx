@@ -1,32 +1,18 @@
 import React from 'react';
 import { css } from '@emotion/core';
 
-import MapPath from './MapPath';
 import MapTip from './MapTip';
 import PlaySlider from './PlaySlider';
 import Loader from './Loader';
-import {
-  useProjection,
-  getDataIndex,
-  mapBy,
-  getMax,
-  usePlayer,
-  firstArray,
-} from './utils';
+import { useProjection, usePlayer, firstArray, transformBounds } from './utils';
 
 export default function Map({
   loading,
   data,
   projection,
-  features,
-  onDataClick,
   formatIndex,
-  hideEmptyTip = false,
-  tipInfo = (d) =>
-    d && [`${d.confirmed} Confirmed Cases`, `${d.deaths} Fatalities`],
-  tipTitleFn = (tipLocation) => tipLocation.name,
-  dataItem = 'confirmed',
-  dataIdKey = 'countryCode',
+  zoomFeature,
+  children,
 }) {
   const { ref, path, width, height } = useProjection(projection);
   const [tipLocation, setTipLocation] = React.useState(null);
@@ -35,22 +21,24 @@ export default function Map({
     firstData.length,
   );
 
-  const finals = React.useMemo(() => getDataIndex(data), [data]);
-  const dataSlice = React.useMemo(() => getDataIndex(data, index), [
-    data,
-    index,
-  ]);
-  const byCode = React.useMemo(() => mapBy(dataSlice, dataIdKey), [
-    dataSlice,
-    dataIdKey,
-  ]);
-  const max = React.useMemo(() => getMax(finals, dataItem), [finals, dataItem]);
-  const svgPaths = React.useMemo(() => features.map((d) => path(d)), [
-    features,
-    path,
-  ]);
+  const zoomTransform = React.useMemo(() => {
+    if (!zoomFeature) return { scale: 1, translate: [0, 0] };
+    const bounds = path.bounds(zoomFeature);
+    const dx = bounds[1][0] - bounds[0][0];
+    const dy = bounds[1][1] - bounds[0][1];
+    const x = (bounds[0][0] + bounds[1][0]) / 2;
+    const y = (bounds[0][1] + bounds[1][1]) / 2;
+    const scale = 0.9 / Math.max(dx / width, dy / height);
+    const translate = [width / 2 - scale * x, height / 2 - scale * y];
+    return { scale, translate };
+  }, [path, zoomFeature, height, width]);
 
-  const tipData = tipLocation ? byCode[tipLocation.id] : null;
+  const zoomTransformString = React.useMemo(() => {
+    return `translate(${zoomTransform.translate}) scale(${zoomTransform.scale})`;
+  }, [zoomTransform]);
+
+  const tip = tipLocation ? tipLocation.tip : null;
+  const showTip = !loading && tipLocation && tip;
 
   return (
     <div
@@ -73,42 +61,30 @@ export default function Map({
               opacity: loading ? '50%' : undefined,
             }}
           >
-            <g height={height} width={width}>
+            <g height={height} width={width} transform={zoomTransformString}>
               <g height={height} width={width}>
-                {features.map((d, i) => {
-                  const data = byCode[d.id];
-                  return (
-                    <MapPath
-                      key={i}
-                      path={svgPaths[i]}
-                      data={data ? data.confirmed : null}
-                      topoData={d}
-                      max={max}
-                      onClick={data ? () => onDataClick(data) : undefined}
-                      onMouseOver={(e) => {
-                        if (tipLocation && tipLocation.id === d.id) return;
-                        setTipLocation({
-                          bounds: path.bounds(d),
-                          id: d.id,
-                          name: d.properties.name,
-                        });
-                      }}
-                    />
-                  );
+                {React.Children.map(children, (child) => {
+                  return React.cloneElement(child, {
+                    path,
+                    tipLocation,
+                    setTipLocation,
+                    index,
+                    loading,
+                  });
                 })}
               </g>
             </g>
           </svg>
         </div>
       </div>
-      {!loading && tipLocation && (!hideEmptyTip || tipData) && (
+      {!loading && (
         <MapTip
-          hideEmptyTip
-          emptyText="No Cases"
-          info={tipInfo(tipData)}
-          title={tipTitleFn(tipLocation, tipData)}
+          info={tip ? tip.info : null}
+          title={tip ? tip.title : null}
           height={height}
-          bounds={tipLocation.bounds}
+          bounds={
+            showTip ? transformBounds(tipLocation.bounds, zoomTransform) : null
+          }
         />
       )}
       <PlaySlider

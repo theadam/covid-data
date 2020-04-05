@@ -4,7 +4,25 @@ import { css } from '@emotion/core';
 import MapTip from './MapTip';
 import PlaySlider from './PlaySlider';
 import Loader from './Loader';
-import { useProjection, usePlayer, firstArray, transformBounds } from './utils';
+import {
+  getDataIndex,
+  mapBy,
+  getMax,
+  useProjection,
+  usePlayer,
+  firstArray,
+  transformBounds,
+} from './utils';
+
+function getTip(tipLocation, datas, children) {
+  if (!tipLocation) return null;
+  const { byCode } = datas[tipLocation.featureSetIndex];
+  const data = byCode[tipLocation.feature.id];
+  const calculateTip = React.Children.toArray(children)[
+    tipLocation.featureSetIndex
+  ].props.calculateTip;
+  return calculateTip(tipLocation.feature, data);
+}
 
 export default function Map({
   loading,
@@ -19,6 +37,28 @@ export default function Map({
   const firstData = React.useMemo(() => firstArray(data), [data]);
   const { play, playing, frame: index, setFrame: setIndex } = usePlayer(
     firstData.length,
+  );
+
+  const baseDatas = React.Children.map(children, ({ props }) => ({
+    data: props.data || [],
+    dataIdKey: props.dataIdKey,
+    dataKey: props.dataKey || 'confirmed',
+  }));
+
+  const datas = React.useMemo(
+    () =>
+      baseDatas.map(({ data, dataIdKey, dataKey }) => {
+        const finals = getDataIndex(data);
+        const dataSlice = getDataIndex(data, index);
+        return {
+          data,
+          finals,
+          dataSlice,
+          byCode: mapBy(dataSlice, dataIdKey),
+          max: getMax(finals, dataKey),
+        };
+      }),
+    [baseDatas, index],
   );
 
   const zoomTransform = React.useMemo(() => {
@@ -37,7 +77,7 @@ export default function Map({
     return `translate(${zoomTransform.translate}) scale(${zoomTransform.scale})`;
   }, [zoomTransform]);
 
-  const tip = tipLocation ? tipLocation.tip : null;
+  const tip = getTip(tipLocation, datas, children);
   const showTip = !loading && tipLocation && tip;
 
   return (
@@ -63,13 +103,26 @@ export default function Map({
           >
             <g height={height} width={width} transform={zoomTransformString}>
               <g height={height} width={width}>
-                {React.Children.map(children, (child) => {
+                {React.Children.map(children, (child, i) => {
                   return React.cloneElement(child, {
                     path,
-                    tipLocation,
-                    setTipLocation,
                     index,
                     loading,
+                    onMouseOver: (feature) => {
+                      if (
+                        loading ||
+                        !child.props.calculateTip ||
+                        (tipLocation && tipLocation.id === feature.id)
+                      ) {
+                        return;
+                      }
+                      setTipLocation({
+                        bounds: path.bounds(feature),
+                        feature: feature,
+                        featureSetIndex: i,
+                      });
+                    },
+                    ...datas[i],
                   });
                 })}
               </g>

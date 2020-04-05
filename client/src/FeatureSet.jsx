@@ -1,7 +1,5 @@
 import React from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import MapPath from './MapPath';
-import { usePrevious, getDataIndex, mapBy, getMax } from './utils';
 
 export default function FeatureSet({
   data = {},
@@ -17,43 +15,17 @@ export default function FeatureSet({
   dataIdKey = 'countryCode',
 
   // Injected by map
-  tipLocation,
-  setTipLocation,
   path,
   index,
   loading,
+  byCode,
+  max,
+  onMouseOver,
 }) {
-  const featureSetUUID = React.useMemo(() => uuidv4(), []);
-  const finals = React.useMemo(() => getDataIndex(data), [data]);
-  const dataSlice = React.useMemo(() => getDataIndex(data, index), [
-    data,
-    index,
-  ]);
-  const byCode = React.useMemo(() => mapBy(dataSlice, dataIdKey), [
-    dataSlice,
-    dataIdKey,
-  ]);
-  const max = React.useMemo(() => getMax(finals, dataKey), [finals, dataKey]);
-
   const svgPaths = React.useMemo(() => features.map((d) => path(d)), [
     features,
     path,
   ]);
-
-  const previousByCode = usePrevious(byCode);
-  React.useEffect(() => {
-    if (
-      tipLocation &&
-      tipLocation.setId === featureSetUUID &&
-      previousByCode !== byCode &&
-      previousByCode !== null
-    ) {
-      setTipLocation({
-        ...tipLocation,
-        data: byCode[tipLocation.id],
-      });
-    }
-  }, [byCode, setTipLocation, tipLocation, previousByCode, featureSetUUID]);
 
   return (
     <>
@@ -77,23 +49,7 @@ export default function FeatureSet({
                 ? () => onDataClick(data)
                 : undefined
             }
-            onMouseOver={(e) => {
-              if (
-                loading ||
-                !calculateTip ||
-                (tipLocation && tipLocation.id === feature.id)
-              ) {
-                return;
-              }
-              setTipLocation({
-                bounds: path.bounds(feature),
-                id: feature.id,
-                feature,
-                data: byCode[feature.id],
-                tip: calculateTip(feature, data),
-                setId: featureSetUUID,
-              });
-            }}
+            onMouseOver={() => onMouseOver(feature)}
           />
         );
       })}

@@ -24,9 +24,6 @@ function App() {
         path {
           transition: fill 0.3s;
         }
-        path.highlight:hover {
-          opacity: 0.5;
-        }
         .map-tip {
           display: none;
         }

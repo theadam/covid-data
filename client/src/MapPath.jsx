@@ -1,5 +1,6 @@
 import React from 'react';
 import { interpolateReds } from 'd3-scale-chromatic';
+import { css } from '@emotion/core';
 
 export default function MapPath({
   path,
@@ -10,11 +11,17 @@ export default function MapPath({
   onMouseOver,
   stroke,
   fill,
+  highlightOpacity,
   highlight,
 }) {
   if (!topoData) return null;
   return (
     <path
+      css={css`
+        &.highlight:hover {
+          opacity: ${highlightOpacity};
+        }
+      `}
       className={highlight !== false ? 'highlight' : null}
       key={topoData.id}
       d={path}

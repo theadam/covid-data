@@ -13,6 +13,7 @@ export default function FeatureSet({
   getHighlight,
   dataKey = 'confirmed',
   dataIdKey = 'countryCode',
+  highlightOpacity = 0.5,
 
   // Injected by map
   path,
@@ -21,6 +22,7 @@ export default function FeatureSet({
   byCode,
   max,
   onMouseOver,
+  tipLocation,
 }) {
   const svgPaths = React.useMemo(() => features.map((d) => path(d)), [
     features,
@@ -31,11 +33,12 @@ export default function FeatureSet({
     <>
       {features.map((feature, i) => {
         const data = byCode[feature.id];
-        if (shouldRender && !shouldRender(feature, data)) {
+        if (shouldRender && !shouldRender(feature, data, tipLocation)) {
           return null;
         }
         return (
           <MapPath
+            highlightOpacity={highlightOpacity}
             key={i}
             highlight={getHighlight ? getHighlight(feature, data) : false}
             stroke={getStroke ? getStroke(feature, data) : null}

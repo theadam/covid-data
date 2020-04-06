@@ -40,8 +40,9 @@ export default function CountyMap({ loading, states, counties, onDataClick }) {
           dataIdKey="fipsId"
           allowEmptyDataClick
           onDataClick={() => setZoomFeature(null)}
-          shouldRender={(feature) =>
-            zoomFeature && feature.id.startsWith(zoomFeature.id)
+          shouldRender={(feature, _, tipLocation) =>
+            (zoomFeature && feature.id.startsWith(zoomFeature.id)) ||
+            (tipLocation && feature.id.startsWith(tipLocation.feature.id))
           }
           calculateTip={(feature, data) => {
             if (!data) return null;
@@ -52,6 +53,7 @@ export default function CountyMap({ loading, states, counties, onDataClick }) {
           }}
         />
         <FeatureSet
+          highlightOpacity={0.2}
           data={states}
           features={stateFeatures}
           getHighlight={() => true}

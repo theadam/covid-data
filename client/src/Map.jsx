@@ -105,7 +105,7 @@ export default function Map({
               height={height}
               width={width}
               transform={zoomTransformString}
-              style={{ transition: 'transform 0.5s' }}
+              css={css`transition: 'transform 0.5s;`}
             >
               <g height={height} width={width}>
                 {React.Children.map(children, (child, i) => {
@@ -113,6 +113,7 @@ export default function Map({
                     path,
                     index,
                     loading,
+                    tipLocation,
                     onMouseOver: (feature) => {
                       if (
                         loading ||

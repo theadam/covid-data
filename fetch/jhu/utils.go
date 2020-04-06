@@ -119,6 +119,7 @@ var countryOverrides = map[string]string{
     "West Bank and Gaza": "Palestine",
     "Kosovo": "Republic of Serbia",
     "Burma": "Republic of the Union of Myanmar",
+    "Sao Tome and Principe": "São Tomé and Príncipe",
 }
 
 func normalizeCountry(country string, province string) (string, string, string) {

@@ -3,9 +3,10 @@ import React from 'react';
 function calculateTransform(bounds, height) {
   if (bounds === null) return null;
   const [[x1, y1], [x2, y2]] = bounds;
-  const yOffset = y1 + (y2 - y1) / 2 > height / 2 ? -(height / 6) : height / 6;
+  const midY = y1 + (y2 - y1) / 2;
+  const yOffset = midY > height / 2 ? -(height / 6) : height / 6;
   return `translate(${x1 + (x2 - x1) / 2}px,${
-    (y2 > height / 2 ? y1 : y2) + yOffset
+    (midY > height / 2 ? y1 : y2) + yOffset
   }px`;
 }
 

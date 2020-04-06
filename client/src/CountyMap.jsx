@@ -3,7 +3,7 @@ import { geoAlbersUsa as proj } from 'd3-geo';
 import * as topojson from 'topojson';
 import countyData from './data/counties-10m.json';
 
-import { covidTip, formatDate, firstArray } from './utils';
+import { covidTip, covidTipInfo, formatDate, firstArray } from './utils';
 
 import Map from './Map';
 import FeatureSet from './FeatureSet';
@@ -36,7 +36,13 @@ export default function CountyMap({ loading, data, onDataClick }) {
           features={countyFeatures}
           getHighlight={() => true}
           dataIdKey="fipsId"
-          calculateTip={covidTip}
+          calculateTip={(feature, data) => {
+            if (!data) return null;
+            return {
+              info: covidTipInfo(data),
+              title: `${data.county}, ${data.state}`,
+            };
+          }}
         />
         <FeatureSet
           features={stateFeatures}

@@ -66,6 +66,12 @@ function mapEachArray(obj, fn) {
   }, {});
 }
 
+function removeLastEachArray(obj) {
+  return Object.keys(obj).reduce((acc, key) => {
+    return { ...acc, [key]: obj[key].slice(0, -1) };
+  }, {});
+}
+
 function getYDomain(data, xDomain) {
   const keys = Object.keys(data);
   let maxY = null;
@@ -158,19 +164,21 @@ export default function ({
   const brushing = React.useRef(false);
   const data = React.useMemo(
     () =>
-      mapEachArray(pick(baseData, chartedCountries), (item, i) => {
-        const override = overrides[item.country] || 0;
-        const date = moveDate(item.date, override);
+      removeLastEachArray(
+        mapEachArray(pick(baseData, chartedCountries), (item, i) => {
+          const override = overrides[item.country] || 0;
+          const date = moveDate(item.date, override);
 
-        return {
-          x: i + override,
-          index: i + override,
-          y: item.confirmed,
-          formattedDate: formatDate(date),
-          date,
-          ...item,
-        };
-      }),
+          return {
+            x: i + override,
+            index: i + override,
+            y: item.confirmed,
+            formattedDate: formatDate(date),
+            date,
+            ...item,
+          };
+        }),
+      ),
     [baseData, chartedCountries],
   );
   const [domain, rawSetDomain] = React.useState(() => getInitialDomain(data));

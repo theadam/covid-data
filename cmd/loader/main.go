@@ -3,7 +3,6 @@ package main
 import (
 	"covid-tracker/data"
 	"covid-tracker/fetch/jhu"
-	"covid-tracker/fetch/opta"
 	"covid-tracker/utils"
 	"flag"
 	"fmt"
@@ -18,9 +17,9 @@ func loadJhu(db *gorm.DB, ignoreStart bool) {
     var start time.Time
     if !ignoreStart { start = startDate(db, &data.Point) }
 
-	points, err := jhu.GetData(start)
-	if err != nil { panic(err.Error()) }
+	points, counties := jhu.GetData(start)
 
+    // INSERT GLOBAL DATA
     items := make([]interface{}, len(points))
     for i, v := range points {
         items[i] = v
@@ -28,19 +27,14 @@ func loadJhu(db *gorm.DB, ignoreStart bool) {
     fmt.Println("Inserting " + strconv.Itoa(len(items)) + " items")
 
     db.Unscoped().Where("date >= ?", start).Delete(&data.Point)
-    err = gormbulk.BulkInsert(db, items, 1000)
+    err := gormbulk.BulkInsert(db, items, 1000)
     if err != nil { panic(err.Error()) }
-}
 
-func loadOpta(db *gorm.DB, ignoreStart bool) {
-    var start time.Time
-    if !ignoreStart { start = startDate(db, &data.Point) }
 
-    countyDatas, err := opta.GetData(start)
-	if err != nil { panic(err.Error()) }
-
-    items := make([]interface{}, len(countyDatas))
-    for i, v := range countyDatas {
+    // INSERT US DATA
+    if !ignoreStart { start = startDate(db, &data.CountyCases) }
+    items = make([]interface{}, len(counties))
+    for i, v := range counties {
         items[i] = v
     }
     fmt.Println("Inserting " + strconv.Itoa(len(items)) + " items")
@@ -66,21 +60,11 @@ func main() {
 
     db.AutoMigrate(&data.Point, &data.CountyCases)
 
-    runJhu := flag.Bool("jhu", false, "Load johns hopkins university data")
-    runOpta := flag.Bool("opta", false, "Load 1point3acres data")
     ignoreStart := flag.Bool("all-dates", false, "Ignore start date")
-
     flag.Parse()
 
-    runAll := !*runJhu && !*runOpta
-
     db.Transaction(func(tx *gorm.DB) error {
-        if runAll || *runJhu {
-            loadJhu(tx, *ignoreStart)
-        }
-        if runAll || *runOpta {
-            loadOpta(tx, *ignoreStart)
-        }
+        loadJhu(tx, *ignoreStart)
         return nil
     })
 }

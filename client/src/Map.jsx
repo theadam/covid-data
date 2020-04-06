@@ -41,7 +41,7 @@ export default function Map({
 
   const baseDatas = React.Children.map(children, ({ props }) => ({
     data: props.data || [],
-    dataIdKey: props.dataIdKey,
+    dataIdKey: props.dataIdKey || 'countryCode',
     dataKey: props.dataKey || 'confirmed',
   }));
 

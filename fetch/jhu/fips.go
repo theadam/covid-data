@@ -1,16 +1,15 @@
-package opta
+package jhu
 
 import (
-	"encoding/csv"
 	"io"
 	"os"
-	"regexp"
 	"strings"
+    "encoding/csv"
 )
 
 func csvFile() string {
     path, _ := os.Getwd()
-    return path + "/fetch/opta/fips-counties.csv"
+    return path + "/fetch/jhu/fips-counties.csv"
 }
 
 func contents() io.Reader {
@@ -18,17 +17,10 @@ func contents() io.Reader {
     return contents
 }
 
-func cleanCounty(c string) string {
-    pattern, _ := regexp.Compile(" (County|Borough|Municipality|Parish|City and Borough)$")
-    c = pattern.ReplaceAllString(c, "")
-
-    pattern, _ = regexp.Compile(" city$")
-    return strings.TrimSpace(pattern.ReplaceAllString(c, " City"))
-}
-
 type FipsData struct {
     Name string
     Fips string
+    StateCode string
 }
 
 func ParseFips() map[string]FipsData {
@@ -45,12 +37,15 @@ func ParseFips() map[string]FipsData {
         fips := reader[1] + reader[2]
 
 
-        key := stateCode + "-" + cleanCounty(countyName)
+        key := fips
 
         result[strings.ToLower(key)] = FipsData{
             Name: countyName,
             Fips: fips,
+            StateCode: stateCode,
         }
     }
     return result
 }
+
+var FipsMap = ParseFips()

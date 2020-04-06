@@ -2,6 +2,10 @@ import React from 'react';
 import { geoAlbersUsa as proj } from 'd3-geo';
 import * as topojson from 'topojson';
 import countyData from './data/counties-10m.json';
+import IconButton from '@material-ui/core/IconButton';
+import ZoomIn from '@material-ui/icons/ZoomIn';
+import ZoomOut from '@material-ui/icons/ZoomOut';
+import Cancel from '@material-ui/icons/Cancel';
 
 import { covidTip, covidTipInfo, formatDate, firstArray } from './utils';
 
@@ -18,9 +22,30 @@ const stateFeatures = topojson.feature(countyData, countyData.objects.states)
 
 export default function CountyMap({ loading, states, counties, onDataClick }) {
   const [zoomFeature, setZoomFeature] = React.useState(null);
+  const [inZoomMode, setZoomMode] = React.useState(false);
   const firstData = React.useMemo(() => firstArray(counties), [counties]);
   return (
-    <div style={{ flex: 1 }}>
+    <div style={{ flex: 1, position: 'relative' }}>
+      <div style={{ position: 'absolute', top: 0, right: 0, zIndex: 1000 }}>
+        {inZoomMode ? (
+          <span style={{ fontSize: 8, marginRight: -10 }}>
+            Click on a state...
+          </span>
+        ) : undefined}
+        <IconButton
+          onClick={() => {
+            if (zoomFeature) {
+              return setZoomFeature(null);
+            } else if (inZoomMode) {
+              return setZoomMode(false);
+            } else {
+              return setZoomMode(true);
+            }
+          }}
+        >
+          {zoomFeature ? <ZoomOut /> : inZoomMode ? <Cancel /> : <ZoomIn />}
+        </IconButton>
+      </div>
       <Map
         zoomFeature={zoomFeature}
         loading={loading}
@@ -38,8 +63,6 @@ export default function CountyMap({ loading, states, counties, onDataClick }) {
           features={countyFeatures}
           getHighlight={() => true}
           dataIdKey="fipsId"
-          allowEmptyDataClick
-          onDataClick={() => setZoomFeature(null)}
           shouldRender={(feature, _, tipLocation) =>
             (zoomFeature && feature.id.startsWith(zoomFeature.id)) ||
             (tipLocation && feature.id.startsWith(tipLocation.feature.id))
@@ -53,6 +76,7 @@ export default function CountyMap({ loading, states, counties, onDataClick }) {
           }}
         />
         <FeatureSet
+          getCursor={() => (inZoomMode ? 'zoom-in' : 'default')}
           highlightOpacity={0.2}
           data={states}
           features={stateFeatures}
@@ -64,7 +88,14 @@ export default function CountyMap({ loading, states, counties, onDataClick }) {
           dataIdKey="fipsId"
           calculateTip={covidTip}
           allowEmptyDataClick
-          onDataClick={(_, feature) => setZoomFeature(feature)}
+          onDataClick={
+            inZoomMode
+              ? (_, feature) => {
+                  setZoomFeature(feature);
+                  setZoomMode(false);
+                }
+              : null
+          }
         />
       </Map>
     </div>

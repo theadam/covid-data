@@ -14,6 +14,7 @@ export default function FeatureSet({
   dataKey = 'confirmed',
   dataIdKey = 'countryCode',
   highlightOpacity = 0.5,
+  getCursor,
 
   // Injected by map
   path,
@@ -47,6 +48,7 @@ export default function FeatureSet({
             data={data ? data.confirmed : null}
             topoData={feature}
             max={max}
+            cursor={getCursor ? getCursor(data, feature) : 'default'}
             onClick={
               onDataClick && (data || allowEmptyDataClick)
                 ? () => onDataClick(data, feature)

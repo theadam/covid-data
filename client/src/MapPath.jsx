@@ -13,6 +13,7 @@ export default function MapPath({
   fill,
   highlightOpacity,
   highlight,
+  cursor,
 }) {
   if (!topoData) return null;
   return (
@@ -36,7 +37,13 @@ export default function MapPath({
       }
       strokeWidth={0.3}
       stroke={stroke || '#AAAAAA'}
-      cursor={onClick && data ? 'pointer' : undefined}
+      cursor={
+        cursor && cursor !== 'default'
+          ? cursor
+          : onClick && data
+          ? 'pointer'
+          : undefined
+      }
       onClick={onClick}
       onMouseOver={onMouseOver}
     />

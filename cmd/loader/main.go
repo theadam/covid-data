@@ -13,15 +13,10 @@ import (
 	"github.com/t-tiger/gorm-bulk-insert"
 )
 
-func loadJhu(db *gorm.DB, ignoreStart bool) {
-    var start time.Time
-    if !ignoreStart { start = startDate(db, &data.Point) }
-
-	points, counties := jhu.GetData(start)
-
+func loadGlobals(db *gorm.DB, globals []data.DataPoint, start time.Time) {
     // INSERT GLOBAL DATA
-    items := make([]interface{}, len(points))
-    for i, v := range points {
+    items := make([]interface{}, len(globals))
+    for i, v := range globals {
         items[i] = v
     }
     fmt.Println("Inserting " + strconv.Itoa(len(items)) + " items")
@@ -29,18 +24,18 @@ func loadJhu(db *gorm.DB, ignoreStart bool) {
     db.Unscoped().Where("date >= ?", start).Delete(&data.Point)
     err := gormbulk.BulkInsert(db, items, 1000)
     if err != nil { panic(err.Error()) }
+}
 
-
+func loadUs(db *gorm.DB, counties []data.CountyData, start time.Time) {
     // INSERT US DATA
-    if !ignoreStart { start = startDate(db, &data.CountyCases) }
-    items = make([]interface{}, len(counties))
+    items := make([]interface{}, len(counties))
     for i, v := range counties {
         items[i] = v
     }
     fmt.Println("Inserting " + strconv.Itoa(len(items)) + " items")
 
     db.Unscoped().Where("date >= ?", start).Delete(&data.CountyCases)
-    err = gormbulk.BulkInsert(db, items, 1000)
+    err := gormbulk.BulkInsert(db, items, 1000)
     if err != nil { panic(err.Error()) }
 }
 
@@ -58,13 +53,26 @@ func main() {
     db := utils.OpenDB()
     defer db.Close()
 
-    db.AutoMigrate(&data.Point, &data.CountyCases)
+    db.AutoMigrate(&data.Point, &data.CountyCases, &data.WorldHist, &data.CountyHist, &data.StateHist)
 
     ignoreStart := flag.Bool("all-dates", false, "Ignore start date")
     flag.Parse()
 
+    var globalStart time.Time
+    if !*ignoreStart { globalStart = startDate(db, &data.Point) }
+
+    var usStart time.Time
+    if !*ignoreStart { usStart = startDate(db, &data.CountyCases) }
+
+	points, counties := jhu.GetData(globalStart, usStart)
+
     db.Transaction(func(tx *gorm.DB) error {
-        loadJhu(tx, *ignoreStart)
+        loadGlobals(tx, points, globalStart)
+        loadUs(tx, counties, usStart)
+
+        data.LoadWorldTable(tx)
+        data.LoadStateTable(tx)
+        data.LoadCountyTable(tx)
         return nil
     })
 }

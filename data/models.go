@@ -22,15 +22,36 @@ var Point DataPoint
 
 type CountyData struct {
 	gorm.Model
-	FipsId     string    `json:"fipsId" gorm:"index:idx_date_state_county_fips"`
-	State      string    `json:"state" gorm:"index:idx_date_state_county_fips"`
-	StateCode  string    `json:"stateCode"`
-	County     string    `json:"county" gorm:"index:idx_date_state_county_fips"`
-	Confirmed  int       `json:"confirmed"`
-	Deaths     int       `json:"deaths"`
-	Date       time.Time `json:"date" gorm:"index;index:idx_date_state_county_fips"`
-	Lat             string    `json:"lat"`
-	Long            string    `json:"long"`
+	FipsId    string    `json:"fipsId" gorm:"index:idx_date_state_county_fips"`
+	State     string    `json:"state" gorm:"index:idx_date_state_county_fips"`
+	StateCode string    `json:"stateCode"`
+	County    string    `json:"county" gorm:"index:idx_date_state_county_fips"`
+	Confirmed int       `json:"confirmed"`
+	Deaths    int       `json:"deaths"`
+	Date      time.Time `json:"date" gorm:"index;index:idx_date_state_county_fips"`
+	Lat       string    `json:"lat"`
+	Long      string    `json:"long"`
 }
 
 var CountyCases CountyData
+
+type CountyHistorical struct {
+	gorm.Model
+    Data string `sql:"type:text;"`
+}
+
+var CountyHist CountyHistorical
+
+type StateHistorical struct {
+	gorm.Model
+    Data string `sql:"type:text;"`
+}
+
+var StateHist StateHistorical
+
+type WorldHistorical struct {
+	gorm.Model
+    Data string `sql:"type:text;"`
+}
+
+var WorldHist WorldHistorical

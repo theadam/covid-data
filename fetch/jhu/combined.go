@@ -28,11 +28,11 @@ func nextDate(timeData []TimeValue) time.Time {
     return next
 }
 
-func GetData(start time.Time) ([]data.DataPoint, []data.CountyData) {
-    globals := timeSeriesGlobals(start)
+func GetData(globalStart time.Time, usStart time.Time) ([]data.DataPoint, []data.CountyData) {
+    globals := timeSeriesGlobals(globalStart)
     nextGlobalDate := nextDate(globals)
 
-    us := timeSeriesUs(start)
+    us := timeSeriesUs(usStart)
     nextUsDate := nextDate(us)
 
     globalData, usData := fetchCurrent(nextGlobalDate, nextUsDate)

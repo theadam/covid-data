@@ -2,8 +2,6 @@ package server
 
 import (
 	"covid-tracker/data"
-	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -79,58 +77,10 @@ func (env *Env) GetCountryData(c *gin.Context) {
 	c.JSON(200, results)
 }
 
-func countryAggregates(db *gorm.DB) *gorm.DB {
-	usBase := db.Model(&data.CountyCases).Where("date = data_points.date")
-	usConfirmed := usBase.Select("sum(confirmed)")
-	usDeaths := usBase.Select("sum(deaths)")
-
-	countryAggregates := db.Select(`
-        date,
-        country,
-        country_code,
-        CASE
-          WHEN country != 'United States' THEN sum(confirmed)
-          ELSE (?)
-        END as confirmed,
-        CASE
-          WHEN country != 'United States' THEN sum(deaths)
-          ELSE (?)
-        END as deaths
-    `, usConfirmed.QueryExpr(), usDeaths.QueryExpr()).Model(&data.Point).
-		Group("date, country, country_code").
-		Order("date, country")
-
-	return countryAggregates
-}
-
 func (env *Env) GetCountryHistorical(c *gin.Context) {
-	type shape struct {
-		Date        time.Time `json:"date"`
-		Country     string    `json:"country"`
-		CountryCode string    `json:"countryCode"`
-		Confirmed   int       `json:"confirmed"`
-		Deaths      int       `json:"deaths"`
-	}
-
-	query := countryAggregates(env.db)
-	if c.Query("country") != "" {
-		query = query.Where("country IN (?)", strings.Split(c.Query("country"), ","))
-	}
-	var aggregates []shape
-	query.Scan(&aggregates)
-
-	obj := make(map[string][]shape)
-
-	for _, item := range aggregates {
-		slice, ok := obj[item.Country]
-		if !ok {
-			slice = make([]shape, 0)
-		}
-		slice = append(slice, item)
-		obj[item.Country] = slice
-	}
-
-	c.JSON(200, obj)
+    var hist data.WorldHistorical
+    env.db.First(&hist)
+    c.Data(200, "application/json; charset=utf-8", []byte(hist.Data))
 }
 
 func (env *Env) GetStateData(c *gin.Context) {
@@ -154,75 +104,10 @@ func (env *Env) GetStateData(c *gin.Context) {
 	c.JSON(200, results)
 }
 
-type StateFips struct {
-    State     string
-    FipsId    string
-}
-
-func stateFipsMap(db *gorm.DB) map[string]StateFips {
-    var fipsData []StateFips
-    db.
-        Select("state, min(substring(fips_id from 1 for 2)) as fips_id").
-        Where("fips_id != ''").
-        Model(&data.CountyCases).
-        Group("state").
-        Scan(&fipsData)
-	fipsMap := make(map[string]StateFips)
-
-    for _, item := range fipsData {
-        fipsMap[item.State] = item
-    }
-    return fipsMap
-}
-
 func (env *Env) GetStateHistorical(c *gin.Context) {
-	type shape struct {
-		State     string `json:"state"`
-		FipsId    string    `json:"fipsId"`
-		Date      string `json:"date"`
-		Confirmed int    `json:"confirmed"`
-		Deaths    int    `json:"deaths"`
-	}
-
-    fipsMap := stateFipsMap(env.db)
-
-	var results []shape
-	query := env.db.
-		Select(`
-            date,
-            state,
-            sum(confirmed) as confirmed,
-            sum(deaths) as deaths
-            `).
-            Where("state != ''").
-            Model(&data.CountyCases).
-            Group("date, state").
-            Order("date, state")
-
-	if c.Query("state") != "" {
-		query = query.Where("state in (?)", strings.Split(c.Query("state"), ","))
-	}
-
-	query.Scan(&results)
-
-
-	obj := make(map[string][]shape)
-
-	for _, item := range results {
-        stateFips := fipsMap[item.State]
-        if stateFips.FipsId == "" { continue }
-
-        item.FipsId = stateFips.FipsId
-		slice, ok := obj[item.FipsId]
-		if !ok {
-			slice = make([]shape, 0)
-		}
-		slice = append(slice, item)
-		obj[item.FipsId] = slice
-	}
-
-
-	c.JSON(200, obj)
+    var hist data.StateHistorical
+    env.db.First(&hist)
+    c.Data(200, "application/json; charset=utf-8", []byte(hist.Data))
 }
 
 func (env *Env) GetCountyData(c *gin.Context) {
@@ -251,52 +136,9 @@ func (env *Env) GetCountyData(c *gin.Context) {
 }
 
 func (env *Env) GetCountyHistorical(c *gin.Context) {
-	type shape struct {
-		State     string `json:"state"`
-		County    string `json:"county"`
-		Date      string `json:"date"`
-		Confirmed int    `json:"confirmed"`
-		Deaths    int    `json:"deaths"`
-		FipsId    string    `json:"fipsId"`
-	}
-
-	var results []shape
-	query := env.db.
-		Select(`
-            date,
-            fips_id,
-            state,
-            county,
-            sum(confirmed) as confirmed,
-            sum(deaths) as deaths
-        `).
-        Model(&data.CountyCases).
-        Where("fips_id != ''").
-		Group("date, state, county, fips_id").
-		Order("date, state, county, fips_id")
-
-	if c.Query("state") != "" {
-		query = query.Where("state in (?)", strings.Split(c.Query("state"), ","))
-	}
-	if c.Query("county") != "" {
-		query = query.Where("county in (?)", strings.Split(c.Query("county"), ","))
-	}
-
-	query.Scan(&results)
-
-	obj := make(map[string][]shape)
-
-	for _, item := range results {
-		slice, ok := obj[item.FipsId]
-		if !ok {
-			slice = make([]shape, 0)
-		}
-		slice = append(slice, item)
-		obj[item.FipsId] = slice
-	}
-
-
-	c.JSON(200, obj)
+    var hist data.CountyHistorical
+    env.db.First(&hist)
+    c.Data(200, "application/json; charset=utf-8", []byte(hist.Data))
 }
 
 func Router(db *gorm.DB) *gin.Engine {

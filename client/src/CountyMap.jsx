@@ -16,13 +16,15 @@ const countyFeatures = topojson.feature(countyData, countyData.objects.counties)
 const stateFeatures = topojson.feature(countyData, countyData.objects.states)
   .features;
 
-export default function CountyMap({ loading, data, onDataClick }) {
-  const firstData = React.useMemo(() => firstArray(data), [data]);
+export default function CountyMap({ loading, states, counties, onDataClick }) {
+  const [zoomFeature, setZoomFeature] = React.useState(null);
+  const firstData = React.useMemo(() => firstArray(counties), [counties]);
   return (
     <div style={{ flex: 1 }}>
       <Map
+        zoomFeature={zoomFeature}
         loading={loading}
-        data={data}
+        data={counties}
         projection={projection}
         onDataClick={onDataClick}
         formatIndex={(i) =>
@@ -32,10 +34,15 @@ export default function CountyMap({ loading, data, onDataClick }) {
         tipTitleFn={(_, d) => `${d.county}, ${d.state}`}
       >
         <FeatureSet
-          data={data}
+          data={counties}
           features={countyFeatures}
           getHighlight={() => true}
           dataIdKey="fipsId"
+          allowEmptyDataClick
+          onDataClick={() => setZoomFeature(null)}
+          shouldRender={(feature) =>
+            zoomFeature && feature.id.startsWith(zoomFeature.id)
+          }
           calculateTip={(feature, data) => {
             if (!data) return null;
             return {
@@ -45,12 +52,17 @@ export default function CountyMap({ loading, data, onDataClick }) {
           }}
         />
         <FeatureSet
+          data={states}
           features={stateFeatures}
-          getHighlight={() => false}
+          getHighlight={() => true}
           getStroke={() => '#888888'}
-          getFill={() => 'none'}
+          getFill={(feature) =>
+            zoomFeature && zoomFeature.id === feature.id ? 'none' : 'default'
+          }
           dataIdKey="fipsId"
           calculateTip={covidTip}
+          allowEmptyDataClick
+          onDataClick={(_, feature) => setZoomFeature(feature)}
         />
       </Map>
     </div>

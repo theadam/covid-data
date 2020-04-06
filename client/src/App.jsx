@@ -22,7 +22,7 @@ function App() {
           margin-right: 10px;
         }
         path {
-          transition: fill 0.2s;
+          transition: fill 0.3s;
         }
         path.highlight:hover {
           opacity: 0.5;

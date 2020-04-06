@@ -46,7 +46,7 @@ export default function FeatureSet({
             max={max}
             onClick={
               onDataClick && (data || allowEmptyDataClick)
-                ? () => onDataClick(data)
+                ? () => onDataClick(data, feature)
                 : undefined
             }
             onMouseOver={() => onMouseOver(feature)}

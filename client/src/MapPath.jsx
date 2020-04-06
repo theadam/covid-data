@@ -19,7 +19,7 @@ export default function MapPath({
       key={topoData.id}
       d={path}
       fill={
-        fill
+        fill && fill !== 'default'
           ? fill
           : data
           ? interpolateReds(

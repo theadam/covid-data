@@ -68,7 +68,7 @@ export default function Map({
     const dy = bounds[1][1] - bounds[0][1];
     const x = (bounds[0][0] + bounds[1][0]) / 2;
     const y = (bounds[0][1] + bounds[1][1]) / 2;
-    const scale = 0.9 / Math.max(dx / width, dy / height);
+    const scale = 0.7 / Math.max(dx / width, dy / height);
     const translate = [width / 2 - scale * x, height / 2 - scale * y];
     return { scale, translate };
   }, [path, zoomFeature, height, width]);
@@ -101,7 +101,12 @@ export default function Map({
               opacity: loading ? '50%' : undefined,
             }}
           >
-            <g height={height} width={width} transform={zoomTransformString}>
+            <g
+              height={height}
+              width={width}
+              transform={zoomTransformString}
+              style={{ transition: 'transform 0.5s' }}
+            >
               <g height={height} width={width}>
                 {React.Children.map(children, (child, i) => {
                   return React.cloneElement(child, {

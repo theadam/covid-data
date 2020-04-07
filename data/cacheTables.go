@@ -56,6 +56,52 @@ func LoadWorldTable(db *gorm.DB) {
     if err != nil { panic(err.Error()) }
 }
 
+func LoadProvinceTable(db *gorm.DB) {
+	type shape struct {
+		Date      string `json:"date"`
+		Country    string `json:"country"`
+		CountryCode    string `json:"countryCode"`
+		Province    string `json:"province"`
+		Confirmed int    `json:"confirmed"`
+		Deaths    int    `json:"deaths"`
+	}
+    db.Unscoped().Delete(&ProvinceHist)
+
+	query := db.Select(`
+        date,
+        country,
+        country_code,
+        province,
+        sum(confirmed) as confirmed,
+        sum(deaths) as deaths
+    `).
+        Model(&Point).
+		Group("date, country, country_code, province").
+		Order("date, country, province")
+
+	var results []shape
+    err := query.Scan(&results).Error
+    if err != nil { panic(err.Error()) }
+
+	obj := make(map[string][]shape)
+
+	for _, item := range results {
+        key := item.CountryCode + "-" + item.Province
+		slice, ok := obj[key]
+		if !ok {
+			slice = make([]shape, 0)
+		}
+		slice = append(slice, item)
+		obj[key] = slice
+	}
+
+    bytes, err := json.Marshal(obj)
+    if err != nil { panic(err.Error()) }
+
+    err = db.Create(&ProvinceHistorical{ Data: string(bytes) }).Error
+    if err != nil { panic(err.Error()) }
+}
+
 type StateFips struct {
     State     string
     FipsId    string

@@ -83,6 +83,12 @@ func (env *Env) GetCountryHistorical(c *gin.Context) {
     c.Data(200, "application/json; charset=utf-8", []byte(hist.Data))
 }
 
+func (env *Env) GetProvinceHistorical(c *gin.Context) {
+    var hist data.ProvinceHistorical
+    env.db.First(&hist)
+    c.Data(200, "application/json; charset=utf-8", []byte(hist.Data))
+}
+
 func (env *Env) GetStateData(c *gin.Context) {
 	type shape struct {
 		State     string `json:"state"`
@@ -152,6 +158,7 @@ func Router(db *gorm.DB) *gin.Engine {
         api.GET("/counties", env.GetCounties)
         api.GET("/data/countries", env.GetCountryData)
         api.GET("/data/countries/historical", env.GetCountryHistorical)
+        api.GET("/data/provinces/historical", env.GetProvinceHistorical)
         api.GET("/data/us/states", env.GetStateData)
         api.GET("/data/us/states/historical", env.GetStateHistorical)
         api.GET("/data/us/counties", env.GetCountyData)

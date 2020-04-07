@@ -55,3 +55,10 @@ type WorldHistorical struct {
 }
 
 var WorldHist WorldHistorical
+
+type ProvinceHistorical struct {
+	gorm.Model
+    Data string `sql:"type:text;"`
+}
+
+var ProvinceHist ProvinceHistorical

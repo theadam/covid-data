@@ -129,6 +129,13 @@ var countryOverrides = map[string]string{
     "Channel Islands": "Jersey",
 }
 
+var provinceOverride = map[string]string{
+    "Nei Mongol (mn)": "Nei Mongol",
+    "Quebec": "Québec",
+    "Xinjiang": "Xinjiang Uygur",
+    "Ningxia": "Ningxia Hui",
+}
+
 func skipGlobal(country string, province string) bool {
     return province == "Recovered"
 }
@@ -170,6 +177,10 @@ func normalizeCountry(country string, province string) (string, string, string) 
                 panic(province + ", " + country + " could not be found")
             }
             province = prov.Name
+            override, ok = provinceOverride[province]
+            if ok {
+                province = override
+            }
         }
         country = c.Name.Common
         countryCode = c.Codes.CCN3

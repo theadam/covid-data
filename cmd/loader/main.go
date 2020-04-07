@@ -19,10 +19,10 @@ func loadGlobals(db *gorm.DB, globals []data.DataPoint, start time.Time) {
     for i, v := range globals {
         items[i] = v
     }
-    fmt.Println("Inserting " + strconv.Itoa(len(items)) + " items")
+    fmt.Println("Inserting " + strconv.Itoa(len(items)) + " global items")
 
     db.Unscoped().Where("date >= ?", start).Delete(&data.Point)
-    err := gormbulk.BulkInsert(db, items, 1000)
+    err := gormbulk.BulkInsert(db, items, 3000)
     if err != nil { panic(err.Error()) }
 }
 
@@ -32,10 +32,10 @@ func loadUs(db *gorm.DB, counties []data.CountyData, start time.Time) {
     for i, v := range counties {
         items[i] = v
     }
-    fmt.Println("Inserting " + strconv.Itoa(len(items)) + " items")
+    fmt.Println("Inserting " + strconv.Itoa(len(items)) + " US items")
 
     db.Unscoped().Where("date >= ?", start).Delete(&data.CountyCases)
-    err := gormbulk.BulkInsert(db, items, 1000)
+    err := gormbulk.BulkInsert(db, items, 3000)
     if err != nil { panic(err.Error()) }
 }
 
@@ -49,6 +49,14 @@ func startDate(db *gorm.DB, table interface{}) time.Time {
     return zero
 }
 
+func runAction(name string, action func()) {
+    now := time.Now()
+    fmt.Println("Starting " + name)
+    action()
+    fmt.Println("Finished " + name + " in " + time.Since(now).String())
+    fmt.Println()
+}
+
 func main() {
     db := utils.OpenDB()
     defer db.Close()
@@ -57,6 +65,14 @@ func main() {
 
     ignoreStart := flag.Bool("all-dates", false, "Ignore start date")
     flag.Parse()
+
+    if (*ignoreStart) {
+        fmt.Println("Loading all data")
+    } else {
+        fmt.Println("Reloading recent data")
+    }
+    fmt.Println()
+
 
     var globalStart time.Time
     if !*ignoreStart { globalStart = startDate(db, &data.Point) }
@@ -67,12 +83,12 @@ func main() {
 	points, counties := jhu.GetData(globalStart, usStart)
 
     db.Transaction(func(tx *gorm.DB) error {
-        loadGlobals(tx, points, globalStart)
-        loadUs(tx, counties, usStart)
+        runAction("Loading Globals", func() { loadGlobals(tx, points, globalStart) })
+        runAction("Loading US", func() { loadUs(tx, counties, usStart) })
+        runAction("Loading World Cache Table", func() { data.LoadWorldTable(tx) })
+        runAction("Loading State Cache Table", func() { data.LoadStateTable(tx) })
+        runAction("Loading County Cache Table", func() { data.LoadCountyTable(tx) })
 
-        data.LoadWorldTable(tx)
-        data.LoadStateTable(tx)
-        data.LoadCountyTable(tx)
         return nil
     })
 }

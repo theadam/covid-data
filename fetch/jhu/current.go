@@ -58,18 +58,19 @@ func fetchCurrent(globalDate time.Time, usDate time.Time) ([]data.DataPoint, []d
 
         } else {
             country, province, countryCode := normalizeCountry(country, columns[2])
-
-            worldData = append(worldData, data.DataPoint{
-                Province: province,
-                Country: country,
-                CountryCode: countryCode,
-                Confirmed: confirmed,
-                Deaths: deaths,
-                Date: globalDate,
-                Lat: lat,
-                Long: long,
-                ExternalCountry: columns[1],
-            })
+            if !skipGlobal(country, province) {
+                worldData = append(worldData, data.DataPoint{
+                    Province: province,
+                    Country: country,
+                    CountryCode: countryCode,
+                    Confirmed: confirmed,
+                    Deaths: deaths,
+                    Date: globalDate,
+                    Lat: lat,
+                    Long: long,
+                    ExternalCountry: columns[1],
+                })
+            }
         }
     }
 

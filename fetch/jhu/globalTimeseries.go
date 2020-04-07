@@ -46,3 +46,7 @@ func (_ *GlobalTimeseries) Key(fields map[string]string) string {
     }
     return fields["country"]
 }
+
+func (_ *GlobalTimeseries) Skip(fields map[string]string) bool {
+    return skipGlobal(fields["country"], fields["province"])
+}

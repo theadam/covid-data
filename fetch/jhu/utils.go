@@ -100,7 +100,7 @@ func consolidateValues(values []TimeValue) []TimeValue {
 }
 
 func isCruise(country string) bool {
-    return country == "Diamond Princess" || country == "MS Zaandam"
+    return country == "Diamond Princess" || country == "MS Zaandam" || country == "Grand Princess"
 }
 
 var countryOverrides = map[string]string{
@@ -120,10 +120,36 @@ var countryOverrides = map[string]string{
     "Kosovo": "Republic of Serbia",
     "Burma": "Republic of the Union of Myanmar",
     "Sao Tome and Principe": "São Tomé and Príncipe",
+    "Curacao": "Curaçao",
+    "St Martin": "Saint Martin",
+    "Reunion": "Réunion",
+    "Saint Barthelemy": "Saint Barthélemy",
+    "Falkland Islands (Malvinas)": "Falkland Islands",
+    "Falkland Islands (Islas Malvinas)": "Falkland Islands",
+    "Channel Islands": "Jersey",
+}
+
+func skipGlobal(country string, province string) bool {
+    return province == "Recovered"
 }
 
 func normalizeCountry(country string, province string) (string, string, string) {
     countryCode := ""
+    possibleCountry, ok := countryOverrides[province]
+    if skipGlobal(country, province) {
+        return country, province, countryCode
+    }
+    if !ok {
+        possibleCountry = province
+    }
+    provAsCountry, err := CountryQuery.FindCountryByName(possibleCountry)
+    if (err == nil) {
+        return provAsCountry.Name.Common, "", provAsCountry.Codes.CCN3
+    }
+
+    if isCruise(province) {
+        province = ""
+    }
     if isCruise(country) {
         province = country
         country = "Cruise"
@@ -137,6 +163,13 @@ func normalizeCountry(country string, province string) (string, string, string) 
         if err != nil {
             fmt.Println(country)
             panic("ERROR: Country Not Found")
+        }
+        if province != "" {
+            prov, err := c.FindSubdivisionByName(province)
+            if err != nil {
+                panic(province + ", " + country + " could not be found")
+            }
+            province = prov.Name
         }
         country = c.Name.Common
         countryCode = c.Codes.CCN3

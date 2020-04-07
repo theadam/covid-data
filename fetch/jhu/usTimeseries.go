@@ -65,3 +65,7 @@ func (_ *UsTimeseries) TimeColumns(columns []string, kind string) []string {
 func (_ *UsTimeseries) Key(fields map[string]string) string {
 	return fields["key"]
 }
+
+func (_ *UsTimeseries) Skip(_ map[string]string) bool {
+    return false
+}

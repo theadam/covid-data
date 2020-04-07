@@ -1,6 +1,6 @@
 import React from 'react';
 import { geoAlbersUsa as proj } from 'd3-geo';
-import * as topojson from 'topojson';
+import * as topojson from 'topojson-client';
 import countyData from './data/counties-10m.json';
 import IconButton from '@material-ui/core/IconButton';
 import ZoomIn from '@material-ui/icons/ZoomIn';

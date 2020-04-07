@@ -41,12 +41,12 @@ func LoadWorldTable(db *gorm.DB) {
 	obj := make(map[string][]shape)
 
 	for _, item := range aggregates {
-		slice, ok := obj[item.Country]
+		slice, ok := obj[item.CountryCode]
 		if !ok {
 			slice = make([]shape, 0)
 		}
 		slice = append(slice, item)
-		obj[item.Country] = slice
+		obj[item.CountryCode] = slice
 	}
 
     bytes, err := json.Marshal(obj)

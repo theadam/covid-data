@@ -41,6 +41,20 @@ export function mapBy(finals, key) {
   return result;
 }
 
+export function getAllMax(data, dataKey) {
+  let max = 0;
+  const keys = Object.keys(data || {});
+
+  keys.forEach((key) => {
+    const item = data[key];
+    const val = item[item.length - 1][dataKey];
+    if (val > max) {
+      max = val;
+    }
+  });
+  return max;
+}
+
 export function getMax(finals, key) {
   let max = 0;
 

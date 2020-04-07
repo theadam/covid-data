@@ -19,7 +19,7 @@ func OpenDB() *gorm.DB {
     for (err != nil || db == nil) && cur < waittime {
         db, err = gorm.Open("postgres", os.Getenv("DATABASE_URL"))
         if err == nil {
-            db.LogMode(true)
+            db.LogMode(false)
             return db
         }
         fmt.Println("Failed to connect to database... Trying again.")

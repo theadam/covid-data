@@ -10,25 +10,26 @@ import (
 const timeLayout = "1/2/06"
 
 type TimeValue struct {
-    Date time.Time
-    Confirmed int
-    Deaths int
-    Recovered int
-    ExtraData map[string]string
-    Key string
+	Date      time.Time
+	Confirmed int
+	Deaths    int
+	Recovered int
+	ExtraData map[string]string
+	Key       string
 }
 
 type TimeseriesRow interface {
-    TimeColumns([]string, string) []string
-    ExtractExtraData([]string) map[string]string
-    Key(map[string]string) string
+	TimeColumns([]string, string) []string
+	ExtractExtraData([]string) map[string]string
+	Key(map[string]string) string
+	Skip(map[string]string) bool
 }
 
 func parseTimeSeries(
-    path string,
-    kind string,
-    start time.Time,
-    timeSeriesRow TimeseriesRow,
+	path string,
+	kind string,
+	start time.Time,
+	timeSeriesRow TimeseriesRow,
 ) []TimeValue {
 	body := fetchFromRepo("master", path)
 	defer body.Close()
@@ -37,92 +38,103 @@ func parseTimeSeries(
 
 	rows := make([]TimeValue, 0)
 	header, err := reader.Read()
-	if err != nil { panic(err.Error()) }
+	if err != nil {
+		panic(err.Error())
+	}
 
 	dateHeaders := timeSeriesRow.TimeColumns(header, kind)
-    dates := getDates(dateHeaders)
+	dates := getDates(dateHeaders)
 
 	for {
 		columns, err := reader.Read()
-		if err == io.EOF { break }
-		if err != nil { panic(err.Error()) }
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			panic(err.Error())
+		}
 
 		dateData := timeSeriesRow.TimeColumns(columns, kind)
 
 		// parse each item in the time series
 		for i, item := range dateData {
-            date := dates[i]
-            // Only handle dates after start
-            if date.Before(start) {
-                continue
-            }
+			date := dates[i]
+			// Only handle dates after start
+			if date.Before(start) {
+				continue
+			}
 
-            if item == "" {
-                item = "0"
-            }
+			if item == "" {
+				item = "0"
+			}
 			number, err := strconv.Atoi(item)
-            if err != nil { panic(err.Error()) }
+			if err != nil {
+				panic(err.Error())
+			}
 
-			confirmed, deaths:= getValuesForKind(kind, number)
-            extraData := timeSeriesRow.ExtractExtraData(columns)
-            timeData := TimeValue{
-                Date: date,
-                Confirmed: confirmed,
-                Deaths: deaths,
-                ExtraData: extraData,
-                Key: timeSeriesRow.Key(extraData),
-            }
+			extraData := timeSeriesRow.ExtractExtraData(columns)
 
-			rows = append(rows, timeData)
+			if !timeSeriesRow.Skip(extraData) {
+				confirmed, deaths := getValuesForKind(kind, number)
+				timeData := TimeValue{
+					Date:      date,
+					Confirmed: confirmed,
+					Deaths:    deaths,
+					ExtraData: extraData,
+					Key:       timeSeriesRow.Key(extraData),
+				}
+
+				rows = append(rows, timeData)
+			}
 		}
 	}
 	return rows
 }
 
 func fetchGlobalConfirmed(start time.Time) []TimeValue {
-    return parseTimeSeries(
-        "csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv",
-        "confirmed",
-        start,
-        &GlobalTS,
-    )
+	return parseTimeSeries(
+		"csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv",
+		"confirmed",
+		start,
+		&GlobalTS,
+	)
 }
 
 func fetchGlobalDeaths(start time.Time) []TimeValue {
-    return parseTimeSeries(
-        "csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv",
-        "deaths",
-        start,
-        &GlobalTS,
-    )
+	return parseTimeSeries(
+		"csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv",
+		"deaths",
+		start,
+		&GlobalTS,
+	)
 }
 
 func fetchUsConfirmed(start time.Time) []TimeValue {
-    return parseTimeSeries(
-        "csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv",
-        "confirmed",
-        start,
-        &UsTS,
-    )
+	return parseTimeSeries(
+		"csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv",
+		"confirmed",
+		start,
+		&UsTS,
+	)
 }
 
 func fetchUsDeaths(start time.Time) []TimeValue {
-    return parseTimeSeries(
-        "csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv",
-        "deaths",
-        start,
-        &UsTS,
-    )
+	return parseTimeSeries(
+		"csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv",
+		"deaths",
+		start,
+		&UsTS,
+	)
 }
 
 func timeSeriesGlobals(start time.Time) []TimeValue {
-    confirmed := fetchGlobalConfirmed(start)
-    deaths := fetchGlobalDeaths(start)
-    return consolidateValues(append(confirmed, deaths...))
+	confirmed := fetchGlobalConfirmed(start)
+	deaths := fetchGlobalDeaths(start)
+	return consolidateValues(append(confirmed, deaths...))
 }
 
 func timeSeriesUs(start time.Time) []TimeValue {
-    confirmed := fetchUsConfirmed(start)
-    deaths := fetchUsDeaths(start)
-    return consolidateValues(append(confirmed, deaths...))
+	confirmed := fetchUsConfirmed(start)
+	deaths := fetchUsDeaths(start)
+	return consolidateValues(append(confirmed, deaths...))
 }

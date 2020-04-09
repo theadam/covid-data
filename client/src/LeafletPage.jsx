@@ -8,7 +8,7 @@ import provinceData from './data/canadaprovtopo.json';
 import australiaData from './data/au-states.json';
 import chinaData from './data/china-provinces.json';
 import PlaySlider from './PlaySlider';
-import { firstArray, usePlayer, formatDate } from './utils';
+import { getAllMax, firstArray, usePlayer, formatDate } from './utils';
 import DataLayer from './DataLayer';
 import Loader from './Loader';
 import fipsData from './fipsData.json';
@@ -112,6 +112,8 @@ function splitData(data) {
   };
 }
 
+const dataKey = 'confirmed';
+
 export default function LeafletPage() {
   const [data, setData] = React.useState({});
   React.useEffect(() => {
@@ -133,6 +135,15 @@ export default function LeafletPage() {
   const getShowProvinces = React.useCallback(() => showProvinces, [
     showProvinces,
   ]);
+
+  const provinceMax = React.useMemo(
+    () => getAllMax({ ...data.provinces, ...data.usStates }, dataKey),
+    [data],
+  );
+  const countiesMax = React.useMemo(() => getAllMax(data.usCounties, dataKey), [
+    data,
+  ]);
+  const worldMax = React.useMemo(() => getAllMax(data.world, dataKey), [data]);
 
   const loading = !data.world;
   const { play, playing, frame: index, setFrame: setIndex } = usePlayer(
@@ -220,6 +231,7 @@ export default function LeafletPage() {
             getShow={getShowCounties}
             data={data.usCounties}
             onHighlight={setHighlight}
+            max={countiesMax}
           />
           <DataLayer
             index={index}
@@ -228,6 +240,7 @@ export default function LeafletPage() {
             data={data.usStates}
             getShow={getShowProvinces}
             onHighlight={setHighlight}
+            max={provinceMax}
             style={React.useCallback(
               () =>
                 showCounties
@@ -246,6 +259,7 @@ export default function LeafletPage() {
             data={data.canada}
             getShow={getShowProvinces}
             onHighlight={setHighlight}
+            max={provinceMax}
           />
           <DataLayer
             index={index}
@@ -254,6 +268,7 @@ export default function LeafletPage() {
             data={data.china}
             getShow={getShowProvinces}
             onHighlight={setHighlight}
+            max={provinceMax}
           />
           <DataLayer
             index={index}
@@ -262,6 +277,7 @@ export default function LeafletPage() {
             data={data.australia}
             getShow={getShowProvinces}
             onHighlight={setHighlight}
+            max={provinceMax}
           />
           <DataLayer
             index={index}
@@ -269,6 +285,7 @@ export default function LeafletPage() {
             featureCollection={features.world}
             data={data.world}
             onHighlight={setHighlight}
+            max={worldMax}
             style={React.useCallback(
               (feature) =>
                 showProvinces

@@ -28,11 +28,11 @@ export default React.memo(
     getShow = () => true,
     getStroke,
     onHighlight,
+    max,
     dataKey = 'confirmed',
     style = () => ({}),
   }) => {
     const dataRef = React.useRef(null);
-    const max = React.useMemo(() => getAllMax(data, dataKey), [data, dataKey]);
     dataRef.current = data;
 
     return (

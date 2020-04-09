@@ -16,13 +16,7 @@ function App() {
         display: flex;
         flex-direction: column;
         flex: 1;
-        margin-left: 30px;
-        margin-right: 30px;
         min-height: 100vh;
-        @media only screen and (max-width: 1000px) {
-          margin-left: 10px;
-          margin-right: 10px;
-        }
         path {
           transition: fill 0.3s;
         }
@@ -39,10 +33,9 @@ function App() {
     >
       <Header />
       <Router style={{ flex: 1, display: 'flex' }}>
-        <Redirect from="/" to="/world" noThrow />
-        <WorldPage path="/world" />
+        <WorldPage path="/old_world" />
         <UsPage path="/us" />
-        <LeafletPage path="/leaflet" />
+        <LeafletPage path="/" />
       </Router>
     </div>
   );

@@ -20,13 +20,18 @@ export default function Header() {
           margin-top: 10px;
         }
         display: flex;
+        margin-left: 30px;
+        margin-right: 30px;
+        @media only screen and (max-width: 1000px) {
+          margin-left: 10px;
+          margin-right: 10px;
+        }
       `}
     >
       <div
         css={css`
           flex: 1;
           display: flex;
-          border-bottom: 1px solid #ccc;
           padding: 10px 0;
           justify-content: space-between;
           align-items: flex-end;
@@ -74,8 +79,10 @@ export default function Header() {
             }
           `}
         >
+          {/*
           <ActiveLink to="/world">World</ActiveLink>
           <ActiveLink to="/us">Us</ActiveLink>
+          */}
         </div>
       </div>
     </div>

@@ -47,6 +47,7 @@ export function getAllMax(data, dataKey) {
 
   keys.forEach((key) => {
     const item = data[key];
+    if (!item[item.length - 1]) console.log(key, item, item[item.length - 1]);
     const val = item[item.length - 1][dataKey];
     if (val > max) {
       max = val;
@@ -212,3 +213,7 @@ const covidTipMaker = (showNoCases) => (feature, data) => {
 
 export const covidTip = covidTipMaker(false);
 export const covidTipIncludingNoCases = covidTipMaker(true);
+
+export function pluck(keys, map) {
+  return keys.reduce((acc, key) => ({ ...acc, [key]: map[key] }), {});
+}

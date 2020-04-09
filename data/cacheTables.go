@@ -2,13 +2,79 @@ package data
 
 import (
 	"encoding/json"
+	"reflect"
+	"time"
 
 	"github.com/jinzhu/gorm"
 )
 
+func getDates(db *gorm.DB, model interface{}) (time.Time, time.Time) {
+    var max time.Time
+    var min time.Time
+    db.Select("max(date) as max, min(date) as min").Model(model).Row().Scan(&max, &min)
+    return min, max
+}
+
+func dateRange(db *gorm.DB) (time.Time, time.Time) {
+    min, max := getDates(db, &Point)
+    cmin, cmax := getDates(db, &CountyCases)
+
+    if min.After(cmin) {
+        min = cmin
+    }
+    if max.Before(cmax) {
+        max = cmax
+    }
+    return min, max
+}
+
+func str(item interface{}) string {
+    bs, _ := json.Marshal(item)
+    return string(bs)
+}
+
+func getDate(item interface{}) time.Time {
+    val := reflect.ValueOf(item)
+    for i := 0; i < val.NumField(); i ++ {
+        if (val.Type().Field(i).Name == "Date") {
+            return val.Field(i).Interface().(time.Time)
+        }
+    }
+    panic("Date not found for " + val.String())
+}
+
+func cloneWithNewDate(item interface{}, newDate time.Time) reflect.Value {
+    val := reflect.ValueOf(item)
+    result := reflect.New(val.Type()).Elem()
+    for i := 0; i < val.NumField(); i ++ {
+        if (val.Type().Field(i).Name == "Date") {
+            result.Field(i).Set(reflect.ValueOf(newDate))
+        } else {
+            result.Field(i).Set(val.Field(i))
+        }
+    }
+    return result
+}
+
+func ensureRange(items interface{}, min time.Time, max time.Time) interface{} {
+    list := reflect.ValueOf(items)
+    first := list.Index(0).Interface()
+    minInList := getDate(first)
+    if min.Before(minInList) {
+        panic("Missing first date for " + str(first))
+    }
+    last := list.Index(list.Len() - 1).Interface()
+    maxInList := getDate(last)
+    if max.After(maxInList) {
+        panic("Missing last date for " + str(last))
+    }
+    return list.Interface()
+}
+
+
 func LoadWorldTable(db *gorm.DB) {
 	type shape struct {
-		Date      string `json:"date"`
+		Date      time.Time `json:"date"`
 		Country    string `json:"country"`
 		CountryCode    string `json:"countryCode"`
 		Confirmed int    `json:"confirmed"`
@@ -49,6 +115,12 @@ func LoadWorldTable(db *gorm.DB) {
 		obj[item.CountryCode] = slice
 	}
 
+
+    min, max := dateRange(db)
+    for _, val := range obj {
+        ensureRange(val, min, max)
+    }
+
     bytes, err := json.Marshal(obj)
     if err != nil { panic(err.Error()) }
 
@@ -58,7 +130,7 @@ func LoadWorldTable(db *gorm.DB) {
 
 func LoadProvinceTable(db *gorm.DB) {
 	type shape struct {
-		Date      string `json:"date"`
+		Date      time.Time `json:"date"`
 		Country    string `json:"country"`
 		CountryCode    string `json:"countryCode"`
 		Province    string `json:"province"`
@@ -76,6 +148,7 @@ func LoadProvinceTable(db *gorm.DB) {
         sum(deaths) as deaths
     `).
         Model(&Point).
+        Where("province != ''").
 		Group("date, country, country_code, province").
 		Order("date, country, province")
 
@@ -94,6 +167,11 @@ func LoadProvinceTable(db *gorm.DB) {
 		slice = append(slice, item)
 		obj[key] = slice
 	}
+
+    min, max := dateRange(db)
+    for _, val := range obj {
+        ensureRange(val, min, max)
+    }
 
     bytes, err := json.Marshal(obj)
     if err != nil { panic(err.Error()) }
@@ -128,7 +206,7 @@ func LoadStateTable(db *gorm.DB) {
 	type shape struct {
 		State     string `json:"state"`
 		FipsId    string    `json:"fipsId"`
-		Date      string `json:"date"`
+		Date      time.Time `json:"date"`
 		Confirmed int    `json:"confirmed"`
 		Deaths    int    `json:"deaths"`
 	}
@@ -166,6 +244,11 @@ func LoadStateTable(db *gorm.DB) {
 		obj[item.FipsId] = slice
 	}
 
+    min, max := dateRange(db)
+    for _, val := range obj {
+        ensureRange(val, min, max)
+    }
+
     bytes, err := json.Marshal(obj)
     if err != nil { panic(err.Error()) }
 
@@ -179,7 +262,7 @@ func LoadCountyTable(db *gorm.DB) {
 	type shape struct {
 		State     string `json:"state"`
 		County    string `json:"county"`
-		Date      string `json:"date"`
+		Date      time.Time `json:"date"`
 		Confirmed int    `json:"confirmed"`
 		Deaths    int    `json:"deaths"`
 		FipsId    string    `json:"fipsId"`
@@ -212,6 +295,11 @@ func LoadCountyTable(db *gorm.DB) {
 		slice = append(slice, item)
 		obj[item.FipsId] = slice
 	}
+
+    min, max := dateRange(db)
+    for _, val := range obj {
+        ensureRange(val, min, max)
+    }
 
     bytes, err := json.Marshal(obj)
     if err != nil { panic(err.Error()) }

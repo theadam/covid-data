@@ -11,6 +11,7 @@ import PlaySlider from './PlaySlider';
 import { firstArray, usePlayer, formatDate } from './utils';
 import DataLayer from './DataLayer';
 import Loader from './Loader';
+import fipsData from './fipsData.json';
 
 const USA = '840';
 const Canada = '124';
@@ -30,49 +31,113 @@ var landMap = {
   ext: 'png',
 };
 
-const countyFeatures = topojson.feature(
-  countyData,
-  countyData.objects.counties,
-);
-
-const stateFeatures = topojson.feature(countyData, countyData.objects.states);
-
-const worldFeatures = topojson.feature(worldData, worldData.objects.countries);
-const provinceFeatures = topojson.feature(
-  provinceData,
-  provinceData.objects.canadaprov,
-);
-const chinaFeatures = topojson.feature(chinaData, chinaData.objects.CHN_adm1);
-const australiaFeatures = topojson.feature(
-  australiaData,
-  australiaData.objects.states,
-);
-
 const stateThreshold = 3;
 const countyThreshold = 5;
 
-export default function LeafletPage() {
-  const [data, setData] = React.useState(null);
-  React.useEffect(() => {
-    Promise.all([
-      fetch('/api/data/countries/historical/').then((r) => r.json()),
-      fetch('/api/data/us/states/historical/').then((r) => r.json()),
-      fetch('/api/data/provinces/historical/').then((r) => r.json()),
-      fetch('/api/data/us/counties/historical/').then((r) => r.json()),
-    ]).then(([countries, states, provinces, counties]) =>
-      setData({ countries, states, provinces, counties }),
-    );
-  }, []);
-  const firstData = React.useMemo(
-    () => (data ? firstArray(data.countries) : []),
-    [data],
-  );
+const baseFeatures = {
+  world: topojson.feature(worldData, worldData.objects.countries),
+  usStates: topojson.feature(countyData, countyData.objects.states),
+  usCounties: topojson.feature(countyData, countyData.objects.counties),
+  china: topojson.feature(chinaData, chinaData.objects.CHN_adm1),
+  australia: topojson.feature(australiaData, australiaData.objects.states),
+  canada: topojson.feature(provinceData, provinceData.objects.canadaprov),
+};
 
-  const loading = data === null;
+function enrichFeatures(
+  featureCollection,
+  featureKey = (feature) => feature.id,
+  displayName = (feature) => feature.properties.name,
+) {
+  return {
+    ...featureCollection,
+    features: featureCollection.features.map((feature) => {
+      const key = featureKey(feature);
+      return {
+        ...feature,
+        key,
+        displayName: displayName(feature),
+      };
+    }),
+  };
+}
+
+function createFeatures() {
+  return {
+    world: enrichFeatures(baseFeatures.world),
+    usStates: enrichFeatures(baseFeatures.usStates),
+    usCounties: enrichFeatures(
+      baseFeatures.usCounties,
+      undefined,
+      (feature) => {
+        if (!fipsData[feature.id]) {
+          console.log(feature.id);
+        }
+        return fipsData[feature.id].displayName;
+      },
+    ),
+    china: enrichFeatures(
+      baseFeatures.china,
+      (feature) => `${China}-${feature.properties.NAME_1}`,
+    ),
+    australia: enrichFeatures(
+      baseFeatures.australia,
+      (feature) => `${Australia}-${feature.properties.STATE_NAME}`,
+    ),
+    canada: enrichFeatures(
+      baseFeatures.canada,
+      (feature) => `${Canada}-${feature.properties.name}`,
+    ),
+  };
+}
+
+const features = createFeatures();
+
+function pluckFeatureData(featureCollection, data) {
+  return featureCollection.features.reduce((acc, { key }) => {
+    if (data[key]) {
+      acc[key] = data[key];
+    }
+    return acc;
+  }, {});
+}
+
+function splitData(data) {
+  return {
+    world: pluckFeatureData(features.world, data.countries),
+    usStates: pluckFeatureData(features.usStates, data.states),
+    usCounties: pluckFeatureData(features.usCounties, data.counties),
+    china: pluckFeatureData(features.china, data.provinces),
+    australia: pluckFeatureData(features.australia, data.provinces),
+    canada: pluckFeatureData(features.canada, data.provinces),
+  };
+}
+
+export default function LeafletPage() {
+  const [data, setData] = React.useState({});
+  React.useEffect(() => {
+    fetch('/api/data/all/historical/')
+      .then((r) => r.json())
+      .then((data) => {
+        setData(splitData(data));
+      });
+  }, []);
+
+  const [hightlight, setHighlight] = React.useState(null);
+  const firstData = React.useMemo(() => (data ? firstArray(data.world) : []), [
+    data,
+  ]);
+  const [zoom, setZoom] = React.useState(4);
+  const showCounties = React.useMemo(() => zoom >= countyThreshold, [zoom]);
+  const showProvinces = React.useMemo(() => zoom >= stateThreshold, [zoom]);
+  const getShowCounties = React.useCallback(() => showCounties, [showCounties]);
+  const getShowProvinces = React.useCallback(() => showProvinces, [
+    showProvinces,
+  ]);
+
+  const loading = features === null;
   const { play, playing, frame: index, setFrame: setIndex } = usePlayer(
     firstData.length,
   );
-  const [zoom, setZoom] = React.useState(4);
   const position = [37.0902, -95.7129];
   return (
     <div
@@ -87,76 +152,105 @@ export default function LeafletPage() {
       <div style={{ flex: 1, display: 'flex' }}>
         <Loader loading={loading} />
         <Map
+          worldCopyJump
           center={position}
           zoom={zoom}
-          style={{ flex: 1, opacity: loading ? 0.5 : undefined }}
+          style={{
+            flex: 1,
+            opacity: loading ? 0.5 : undefined,
+            background: 'rgb(202, 210, 211)',
+            position: 'relative',
+          }}
           onViewportChanged={({ zoom: newZoom }) =>
             zoom !== newZoom && setZoom(newZoom)
           }
         >
+          {!loading && (
+            <div
+              className="highlight-info"
+              css={css`
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                padding: 6px 8px;
+                font: 14px/16px Arial, Helvetica, sans-serif;
+                background: white;
+                background: rgba(255, 255, 255, 0.8);
+                box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+                border-radius: 5px;
+                h4 {
+                  margin: 0 0 5px;
+                  color: #777;
+                }
+              `}
+            >
+              <h4>Hover over areas to see info</h4>
+            </div>
+          )}
           <DataLayer
             index={index}
-            features={countyFeatures}
-            getShow={() => zoom >= countyThreshold}
-            data={data && data.counties}
+            featureCollection={features.usCounties}
+            getShow={getShowCounties}
+            data={data.usCounties}
           />
           <DataLayer
             index={index}
-            features={stateFeatures}
-            getShow={() => zoom >= stateThreshold}
-            style={() =>
-              zoom >= countyThreshold
-                ? {
-                    weight: 2,
-                    color: '#888888',
-                    fillColor: 'none',
-                  }
-                : {}
-            }
-            data={data && data.states}
+            featureCollection={features.usStates}
+            data={data.usStates}
+            getShow={getShowProvinces}
+            style={React.useCallback(
+              () =>
+                showCounties
+                  ? {
+                      weight: 2,
+                      fillColor: 'none',
+                    }
+                  : {},
+              [showCounties],
+            )}
           />
           <DataLayer
             index={index}
-            features={provinceFeatures}
-            data={data && data.provinces}
-            getShow={() => zoom >= stateThreshold}
-            featureKey={(feature) => `${Canada}-${feature.properties.name}`}
+            featureCollection={features.canada}
+            data={data.canada}
+            getShow={getShowProvinces}
           />
           <DataLayer
             index={index}
-            features={chinaFeatures}
-            data={data && data.provinces}
-            getShow={() => zoom >= stateThreshold}
-            featureKey={(feature) => `${China}-${feature.properties.NAME_1}`}
+            featureCollection={features.china}
+            data={data.china}
+            getShow={getShowProvinces}
           />
           <DataLayer
             index={index}
-            features={australiaFeatures}
-            data={data && data.provinces}
-            getShow={() => zoom >= stateThreshold}
-            featureKey={(feature) =>
-              `${Australia}-${feature.properties.STATE_NAME}`
-            }
+            featureCollection={features.australia}
+            data={data.australia}
+            getShow={getShowProvinces}
           />
           <DataLayer
             index={index}
-            features={worldFeatures}
-            data={data && data.countries}
-            style={() =>
-              zoom >= stateThreshold
-                ? {
-                    weight: 2,
-                    color: '#888888',
-                  }
-                : {}
-            }
-            getShow={(feature) =>
-              zoom < stateThreshold ||
-              !countriesWithRegions.includes(feature.id)
-            }
+            featureCollection={features.world}
+            data={data.world}
+            style={React.useCallback(
+              (feature) =>
+                showProvinces
+                  ? {
+                      weight: 2,
+                      ...(countriesWithRegions.includes(feature.id)
+                        ? { fillColor: 'none' }
+                        : {}),
+                    }
+                  : {},
+              [showProvinces],
+            )}
           />
           <Pane>
-            <TileLayer {...landMap} noWrap zIndex={10} />
+            {React.useMemo(
+              () => (
+                <TileLayer {...landMap} noWrap />
+              ),
+              [],
+            )}
           </Pane>
         </Map>
       </div>

@@ -1,56 +1,57 @@
 import React from 'react';
 import { GeoJSON } from 'react-leaflet';
-import { interpolateReds } from 'd3-scale-chromatic';
+// import { interpolateReds } from 'd3-scale-chromatic';
+import { interpolate as interp } from 'd3-interpolate';
+import { color } from 'd3-color';
 import { getAllMax } from './utils';
 
-function getData(data, featureKey, index) {
-  if (!data) return data;
-  const fData = data[featureKey];
-  if (!fData) return null;
-  const iData = fData[index];
-  return iData;
-}
+const colorStart = '#FFEDA0';
+const colorEnd = '#800026';
+const interpolateReds = interp(colorStart, colorEnd);
 
 function interpolate(data, max) {
   if (!data) {
-    return '#eee';
+    return colorStart;
   }
-  return interpolateReds(
-    Math.sqrt(Math.sqrt(data)) / Math.sqrt(Math.sqrt(max)),
-  );
+  return color(
+    interpolateReds(Math.sqrt(Math.sqrt(data)) / Math.sqrt(Math.sqrt(max))),
+  )
+    .brighter(0.2)
+    .formatHex();
 }
 
-export default function DataLayer({
-  index,
-  features,
-  data,
-  getShow = () => true,
-  getStroke,
-  dataKey = 'confirmed',
-  style = () => ({}),
-  featureKey = (feature) => feature.id,
-}) {
-  const max = React.useMemo(() => getAllMax(data, dataKey), [data, dataKey]);
+export default React.memo(
+  ({
+    index,
+    data,
+    featureCollection,
+    getShow = () => true,
+    getStroke,
+    dataKey = 'confirmed',
+    style = () => ({}),
+  }) => {
+    const max = React.useMemo(() => getAllMax(data, dataKey), [data, dataKey]);
 
-  return (
-    <GeoJSON
-      data={features}
-      style={(feature) => {
-        const show = getShow(feature);
-        const stroke = getStroke ? getStroke(feature) : show;
-        const item = getData(data, featureKey(feature), index);
-        const st = style(feature, item);
-        return {
-          weight: 1,
-          stroke,
-          color: '#AAAAAA',
-          fillOpacity: 1,
-          fillColor: show
-            ? interpolate(item ? item[dataKey] : null, max)
-            : 'none',
-          ...st,
-        };
-      }}
-    />
-  );
-}
+    return (
+      <GeoJSON
+        data={featureCollection}
+        style={(feature) => {
+          const show = getShow(feature);
+          const stroke = getStroke ? getStroke(feature) : show;
+          const item = data?.[feature.key]?.[index];
+          const value = item?.[dataKey];
+          const st = style(feature, item);
+          return {
+            weight: 1,
+            stroke,
+            color: 'white',
+            dashArray: 3,
+            fillOpacity: 1,
+            fillColor: show ? interpolate(value, max) : 'none',
+            ...st,
+          };
+        }}
+      />
+    );
+  },
+);

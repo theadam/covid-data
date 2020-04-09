@@ -28,14 +28,20 @@ func nextDate(timeData []TimeValue) time.Time {
     return next
 }
 
-func GetData(globalStart time.Time, usStart time.Time) ([]data.DataPoint, []data.CountyData) {
-    globals := timeSeriesGlobals(globalStart)
+func GetData(start time.Time) ([]data.DataPoint, []data.CountyData) {
+    globals := timeSeriesGlobals(start)
+    globals = append(globals, timeSeriesUsTerritories(start)...)
     nextGlobalDate := nextDate(globals)
 
-    us := timeSeriesUs(usStart)
+    us := timeSeriesUs(start)
     nextUsDate := nextDate(us)
 
-    globalData, usData := fetchCurrent(nextGlobalDate, nextUsDate)
+    if !nextUsDate.Equal(nextGlobalDate) {
+        panic("Next dates do not equal " + nextGlobalDate.String() + " != " + nextUsDate.String())
+    }
+
+
+    globalData, usData := fetchCurrent(nextGlobalDate, collectLatest(globals), collectLatest(us))
 
     for _, global := range globals {
         globalData = append(globalData, toDataPoint(global));

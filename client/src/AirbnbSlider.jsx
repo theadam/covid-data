@@ -29,6 +29,7 @@ export default withStyles({
   },
   active: {},
   valueLabel: {
+    zIndex: 1000,
     marginLeft: 4,
     left: 'calc(-50% + 4px)',
   },

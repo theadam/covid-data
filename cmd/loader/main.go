@@ -87,7 +87,12 @@ func main() {
 		usStart = startDate(db, &data.CountyCases)
 	}
 
-	points, counties := jhu.GetData(globalStart, usStart)
+    start := globalStart
+    if usStart.Before(start) {
+        start = usStart
+    }
+
+	points, counties := jhu.GetData(start)
 
 	db.Transaction(func(tx *gorm.DB) error {
 		runAction("Loading Globals", func() { loadGlobals(tx, points, globalStart) })

@@ -2,6 +2,7 @@ package server
 
 import (
 	"covid-tracker/data"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -9,6 +10,44 @@ import (
 
 type Env struct {
 	db *gorm.DB
+}
+
+func getText(db *gorm.DB, model interface{}) string {
+	var text string
+	db.Select("data").Model(model).Row().Scan(&text)
+	return text
+}
+
+func (env *Env) GetCountryHistorical(c *gin.Context) {
+	c.Data(200, "application/json; charset=utf-8", []byte(getText(env.db, &data.WorldHist)))
+}
+
+func (env *Env) GetProvinceHistorical(c *gin.Context) {
+	c.Data(200, "application/json; charset=utf-8", []byte(getText(env.db, &data.ProvinceHist)))
+}
+
+func (env *Env) GetStateHistorical(c *gin.Context) {
+	var hist data.StateHistorical
+	env.db.First(&hist)
+	c.Data(200, "application/json; charset=utf-8", []byte(hist.Data))
+}
+
+func (env *Env) GetCountyHistorical(c *gin.Context) {
+	var hist data.CountyHistorical
+	env.db.First(&hist)
+	c.Data(200, "application/json; charset=utf-8", []byte(hist.Data))
+}
+
+func (env *Env) GetAllHistorical(c *gin.Context) {
+	json := fmt.Sprintf(
+		`{"countries":%s,"provinces":%s,"states":%s,"counties":%s}`,
+		getText(env.db, &data.WorldHist),
+		getText(env.db, &data.ProvinceHist),
+		getText(env.db, &data.StateHist),
+        getText(env.db, &data.CountyHist),
+    )
+
+	c.Data(200, "application/json; charset=utf-8", []byte(json))
 }
 
 func (env *Env) GetCountries(c *gin.Context) {
@@ -31,8 +70,8 @@ func (env *Env) GetStates(c *gin.Context) {
 
 func (env *Env) GetCounties(c *gin.Context) {
 	type shape struct {
-        State  string `json:"state"`
-        County string `json:"county"`
+		State  string `json:"state"`
+		County string `json:"county"`
 	}
 
 	var result []shape
@@ -63,7 +102,7 @@ func (env *Env) GetCountryData(c *gin.Context) {
 	var usResult shape
 	env.db.Model(&data.CountyCases).
 		Select("sum(confirmed) as confirmed, sum(deaths) as deaths").
-        Where("date = (?)", maxCountyDate).
+		Where("date = (?)", maxCountyDate).
 		Scan(&usResult)
 
 	for i, result := range results {
@@ -75,18 +114,6 @@ func (env *Env) GetCountryData(c *gin.Context) {
 	}
 
 	c.JSON(200, results)
-}
-
-func (env *Env) GetCountryHistorical(c *gin.Context) {
-    var hist data.WorldHistorical
-    env.db.First(&hist)
-    c.Data(200, "application/json; charset=utf-8", []byte(hist.Data))
-}
-
-func (env *Env) GetProvinceHistorical(c *gin.Context) {
-    var hist data.ProvinceHistorical
-    env.db.First(&hist)
-    c.Data(200, "application/json; charset=utf-8", []byte(hist.Data))
 }
 
 func (env *Env) GetStateData(c *gin.Context) {
@@ -102,18 +129,12 @@ func (env *Env) GetStateData(c *gin.Context) {
 		Select(`
             CASE WHEN state = '' THEN 'Unknown' ELSE state END as state, sum(confirmed) as confirmed, sum(deaths) as deaths
         `).
-        Where("date = (?)", maxDate).
+		Where("date = (?)", maxDate).
 		Model(&data.CountyCases).
 		Group("state").
 		Scan(&results)
 
 	c.JSON(200, results)
-}
-
-func (env *Env) GetStateHistorical(c *gin.Context) {
-    var hist data.StateHistorical
-    env.db.First(&hist)
-    c.Data(200, "application/json; charset=utf-8", []byte(hist.Data))
 }
 
 func (env *Env) GetCountyData(c *gin.Context) {
@@ -134,45 +155,39 @@ func (env *Env) GetCountyData(c *gin.Context) {
             sum(deaths) as deaths
         `).
 		Model(&data.CountyCases).
-        Where("date = (?)", maxDate).
+		Where("date = (?)", maxDate).
 		Group("state, county").
 		Scan(&results)
 
 	c.JSON(200, results)
 }
 
-func (env *Env) GetCountyHistorical(c *gin.Context) {
-    var hist data.CountyHistorical
-    env.db.First(&hist)
-    c.Data(200, "application/json; charset=utf-8", []byte(hist.Data))
-}
-
 func Router(db *gorm.DB) *gin.Engine {
 	r := gin.Default()
 	env := &Env{db: db}
 
-    api := r.Group("/api/")
-    {
-        api.GET("/countries", env.GetCountries)
-        api.GET("/states", env.GetStates)
-        api.GET("/counties", env.GetCounties)
-        api.GET("/data/countries", env.GetCountryData)
-        api.GET("/data/countries/historical", env.GetCountryHistorical)
-        api.GET("/data/provinces/historical", env.GetProvinceHistorical)
-        api.GET("/data/us/states", env.GetStateData)
-        api.GET("/data/us/states/historical", env.GetStateHistorical)
-        api.GET("/data/us/counties", env.GetCountyData)
-        api.GET("/data/us/counties/historical", env.GetCountyHistorical)
-    }
+	api := r.Group("/api/")
+	{
+		api.GET("/countries", env.GetCountries)
+		api.GET("/states", env.GetStates)
+		api.GET("/counties", env.GetCounties)
+		api.GET("/data/countries", env.GetCountryData)
+		api.GET("/data/countries/historical", env.GetCountryHistorical)
+		api.GET("/data/provinces/historical", env.GetProvinceHistorical)
+		api.GET("/data/us/states", env.GetStateData)
+		api.GET("/data/us/states/historical", env.GetStateHistorical)
+		api.GET("/data/us/counties", env.GetCountyData)
+		api.GET("/data/us/counties/historical", env.GetCountyHistorical)
+		api.GET("/data/all/historical", env.GetAllHistorical)
+	}
 
-    r.Static("/client", "./client/build")
+	r.Static("/client", "./client/build")
 
-    r.NoRoute(func(c *gin.Context) {
-        // c.String(404, "404 page not found")
+	r.NoRoute(func(c *gin.Context) {
+		// c.String(404, "404 page not found")
 
-        c.File("./client/build/index.html")
-    })
+		c.File("./client/build/index.html")
+	})
 
 	return r
 }
-

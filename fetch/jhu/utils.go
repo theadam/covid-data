@@ -194,3 +194,14 @@ func padFips(fips string) string {
     }
     return fips
 }
+
+func collectLatest(values []TimeValue) map[string]TimeValue {
+    latest := make(map[string]TimeValue)
+    for _, value := range values {
+        current, ok := latest[value.Key]
+        if !ok || current.Date.Before(value.Date) {
+            latest[value.Key] = value
+        }
+    }
+    return latest
+}

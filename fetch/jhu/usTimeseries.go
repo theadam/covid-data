@@ -26,7 +26,7 @@ func (_ *UsTimeseries) ExtractExtraData(columns []string) map[string]string {
 	country := columns[7]
 	lat := columns[8]
 	long := columns[9]
-	key := columns[10]
+	key := fips
 	return map[string]string{
 		"fips":    fips,
 		"county":  county,
@@ -35,6 +35,7 @@ func (_ *UsTimeseries) ExtractExtraData(columns []string) map[string]string {
 		"lat":     lat,
 		"long":    long,
 		"key":     key,
+        "countryCode": columns[3],
 	}
 }
 
@@ -66,6 +67,6 @@ func (_ *UsTimeseries) Key(fields map[string]string) string {
 	return fields["key"]
 }
 
-func (_ *UsTimeseries) Skip(_ map[string]string) bool {
-    return false
+func (_ *UsTimeseries) Skip(fields map[string]string) bool {
+    return fields["countryCode"] != "840"
 }

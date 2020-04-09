@@ -109,6 +109,24 @@ func fetchGlobalDeaths(start time.Time) []TimeValue {
 	)
 }
 
+func fetchUsTerritoriesConfirmed(start time.Time) []TimeValue {
+	return parseTimeSeries(
+		"csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv",
+		"confirmed",
+		start,
+		&UsTerritoryTS,
+	)
+}
+
+func fetchUsTerritoriesDeaths(start time.Time) []TimeValue {
+	return parseTimeSeries(
+		"csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv",
+		"deaths",
+		start,
+		&UsTerritoryTS,
+	)
+}
+
 func fetchUsConfirmed(start time.Time) []TimeValue {
 	return parseTimeSeries(
 		"csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv",
@@ -130,6 +148,12 @@ func fetchUsDeaths(start time.Time) []TimeValue {
 func timeSeriesGlobals(start time.Time) []TimeValue {
 	confirmed := fetchGlobalConfirmed(start)
 	deaths := fetchGlobalDeaths(start)
+	return consolidateValues(append(confirmed, deaths...))
+}
+
+func timeSeriesUsTerritories(start time.Time) []TimeValue {
+	confirmed := fetchUsTerritoriesConfirmed(start)
+	deaths := fetchUsTerritoriesDeaths(start)
 	return consolidateValues(append(confirmed, deaths...))
 }
 

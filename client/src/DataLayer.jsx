@@ -3,7 +3,6 @@ import { GeoJSON } from 'react-leaflet';
 // import { interpolateReds } from 'd3-scale-chromatic';
 import { interpolate as interp } from 'd3-interpolate';
 import { color } from 'd3-color';
-import { getAllMax } from './utils';
 
 const colorStart = '#FFEDA0';
 const colorEnd = '#800026';
@@ -32,8 +31,8 @@ export default React.memo(
     dataKey = 'confirmed',
     style = () => ({}),
   }) => {
-    const dataRef = React.useRef(null);
-    dataRef.current = data;
+    const propsRef = React.useRef({ index, data, style });
+    propsRef.current = { index, data, style };
 
     return (
       <GeoJSON
@@ -41,12 +40,30 @@ export default React.memo(
         onEachFeature={(feature, layer) => {
           layer.on({
             mouseover: () => {
+              layer.bringToFront();
+              layer.setStyle({
+                weight: 3,
+                dashArray: '',
+              });
               onHighlight({
-                dataArray: dataRef.current?.[feature.key],
+                feature: feature,
+                dataArray: propsRef.current?.data?.[feature.key],
                 displayName: feature.displayName,
               });
             },
-            mouseout: () => onHighlight(null),
+            mouseout: () => {
+              layer.setStyle({
+                weight: 1,
+                dashArray: 3,
+                ...propsRef.current?.style(
+                  feature,
+                  propsRef.current?.data?.[feature.key]?.[
+                    propsRef.current?.index
+                  ],
+                ),
+              });
+              onHighlight(null);
+            },
           });
         }}
         style={(feature) => {

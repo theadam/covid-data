@@ -122,7 +122,7 @@ export default function LeafletPage() {
       });
   }, []);
 
-  const [hightlight, setHighlight] = React.useState(null);
+  const [highlight, setHighlight] = React.useState(null);
   const firstData = React.useMemo(() => (data ? firstArray(data.world) : []), [
     data,
   ]);
@@ -134,7 +134,7 @@ export default function LeafletPage() {
     showProvinces,
   ]);
 
-  const loading = features === null;
+  const loading = !data.world;
   const { play, playing, frame: index, setFrame: setIndex } = usePlayer(
     firstData.length,
   );
@@ -169,6 +169,7 @@ export default function LeafletPage() {
             <div
               className="highlight-info"
               css={css`
+                z-index: 1000;
                 position: absolute;
                 top: 10px;
                 right: 10px;
@@ -184,20 +185,49 @@ export default function LeafletPage() {
                 }
               `}
             >
-              <h4>Hover over areas to see info</h4>
+              {highlight === null ? (
+                <h4>Hover over an area to see information</h4>
+              ) : (
+                <span>
+                  <b>{highlight.displayName}</b>
+                  <br />
+                  {highlight?.dataArray?.[index] ? (
+                    <span>
+                      <span>
+                        {highlight?.dataArray?.[
+                          index
+                        ]?.confirmed.toLocaleString()}{' '}
+                        Confirmed Cases
+                        <br />
+                      </span>
+                      <span>
+                        {highlight?.dataArray?.[index]?.deaths.toLocaleString()}{' '}
+                        Deaths
+                        <br />
+                      </span>
+                    </span>
+                  ) : (
+                    <span>No Cases</span>
+                  )}
+                </span>
+              )}
             </div>
           )}
           <DataLayer
             index={index}
+            name="usCounties"
             featureCollection={features.usCounties}
             getShow={getShowCounties}
             data={data.usCounties}
+            onHighlight={setHighlight}
           />
           <DataLayer
             index={index}
+            name="usStates"
             featureCollection={features.usStates}
             data={data.usStates}
             getShow={getShowProvinces}
+            onHighlight={setHighlight}
             style={React.useCallback(
               () =>
                 showCounties
@@ -211,26 +241,34 @@ export default function LeafletPage() {
           />
           <DataLayer
             index={index}
+            name="canada"
             featureCollection={features.canada}
             data={data.canada}
             getShow={getShowProvinces}
+            onHighlight={setHighlight}
           />
           <DataLayer
             index={index}
+            name="china"
             featureCollection={features.china}
             data={data.china}
             getShow={getShowProvinces}
+            onHighlight={setHighlight}
           />
           <DataLayer
             index={index}
+            name="australia"
             featureCollection={features.australia}
             data={data.australia}
             getShow={getShowProvinces}
+            onHighlight={setHighlight}
           />
           <DataLayer
             index={index}
+            name="world"
             featureCollection={features.world}
             data={data.world}
+            onHighlight={setHighlight}
             style={React.useCallback(
               (feature) =>
                 showProvinces

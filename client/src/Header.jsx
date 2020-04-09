@@ -16,10 +16,8 @@ export default function Header() {
     <div
       css={css`
         margin-top: 30px;
-        margin-bottom: 50px;
         @media only screen and (max-width: 1000px) {
           margin-top: 10px;
-          margin-bottom: 20px;
         }
         display: flex;
       `}

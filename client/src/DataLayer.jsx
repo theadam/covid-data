@@ -27,18 +27,33 @@ export default React.memo(
     featureCollection,
     getShow = () => true,
     getStroke,
+    onHighlight,
     dataKey = 'confirmed',
     style = () => ({}),
   }) => {
+    const dataRef = React.useRef(null);
     const max = React.useMemo(() => getAllMax(data, dataKey), [data, dataKey]);
+    dataRef.current = data;
 
     return (
       <GeoJSON
         data={featureCollection}
+        onEachFeature={(feature, layer) => {
+          layer.on({
+            mouseover: () => {
+              onHighlight({
+                dataArray: dataRef.current?.[feature.key],
+                displayName: feature.displayName,
+              });
+            },
+            mouseout: () => onHighlight(null),
+          });
+        }}
         style={(feature) => {
           const show = getShow(feature);
           const stroke = getStroke ? getStroke(feature) : show;
-          const item = data?.[feature.key]?.[index];
+          const array = data?.[feature.key];
+          const item = array?.[index];
           const value = item?.[dataKey];
           const st = style(feature, item);
           return {

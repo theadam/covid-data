@@ -80,10 +80,10 @@ func main() {
 	db.Transaction(func(tx *gorm.DB) error {
 		runAction("Loading Globals", func() { loadGlobals(tx, points, start) })
 		runAction("Loading US", func() { loadUs(tx, counties, start) })
-		runAction("Loading World Cache Table", func() { data.WriteWorldData(tx) })
-		runAction("Loading Province Cache Table", func() { data.WriteProvinceData(tx) })
-		runAction("Loading State Cache Table", func() { data.WriteStateData(tx) })
-		runAction("Loading County Cache Table", func() { data.WriteCountyData(tx) })
+		runAction("Writing World JSON data", func() { data.WriteWorldData(tx) })
+		runAction("Writing Province JSON data", func() { data.WriteProvinceData(tx) })
+		runAction("Writing State JSON data", func() { data.WriteStateData(tx) })
+		runAction("Writing County JSON data", func() { data.WriteCountyData(tx) })
 
 		return nil
 	})

@@ -47,7 +47,7 @@ export default React.memo(
               });
               onHighlight({
                 feature: feature,
-                dataArray: propsRef.current?.data?.[feature.key],
+                data: propsRef.current?.data?.[feature.key],
                 displayName: feature.displayName,
               });
             },

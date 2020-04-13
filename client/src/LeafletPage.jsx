@@ -201,17 +201,19 @@ export default function LeafletPage() {
                 <span>
                   <b>{highlight.displayName}</b>
                   <br />
-                  {highlight?.dataArray?.[index] ? (
+                  {highlight?.data?.dates?.[index] ? (
                     <span>
                       <span>
-                        {highlight?.dataArray?.[
+                        {highlight?.data?.dates?.[
                           index
                         ]?.confirmed.toLocaleString()}{' '}
                         Confirmed Cases
                         <br />
                       </span>
                       <span>
-                        {highlight?.dataArray?.[index]?.deaths.toLocaleString()}{' '}
+                        {highlight?.data?.dates?.[
+                          index
+                        ]?.deaths.toLocaleString()}{' '}
                         Deaths
                         <br />
                       </span>

@@ -1,13 +1,8 @@
 import React from 'react';
 import '../node_modules/react-vis/dist/style.css';
 import { css } from '@emotion/core';
-import WorldPage from './WorldPage';
-import UsPage from './UsPage';
 import LeafletPage from './LeafletPage';
 import Header from './Header';
-import OpenLayersPage from './OpenLayersPage';
-
-import { Router } from '@reach/router';
 
 function App() {
   return (
@@ -33,9 +28,7 @@ function App() {
       `}
     >
       <Header />
-      <Router style={{ flex: 1, display: 'flex' }}>
-        <LeafletPage path="/" />
-      </Router>
+      <LeafletPage />
     </div>
   );
 }

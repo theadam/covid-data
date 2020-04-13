@@ -35,30 +35,3 @@ type CountyData struct {
 
 var CountyCases CountyData
 
-type CountyHistorical struct {
-	gorm.Model
-    Data string `sql:"type:text;"`
-}
-
-var CountyHist CountyHistorical
-
-type StateHistorical struct {
-	gorm.Model
-    Data string `sql:"type:text;"`
-}
-
-var StateHist StateHistorical
-
-type WorldHistorical struct {
-	gorm.Model
-    Data string `sql:"type:text;"`
-}
-
-var WorldHist WorldHistorical
-
-type ProvinceHistorical struct {
-	gorm.Model
-    Data string `sql:"type:text;"`
-}
-
-var ProvinceHist ProvinceHistorical

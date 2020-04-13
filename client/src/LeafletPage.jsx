@@ -3,7 +3,7 @@ import { css } from '@emotion/core';
 import { Pane, Map, TileLayer } from 'react-leaflet';
 import countyData from './data/counties-10m.json';
 import * as topojson from 'topojson-client';
-import worldData from './data/countries-50m.json';
+import worldData from './data/countries-110m.json';
 import provinceData from './data/canadaprovtopo.json';
 import australiaData from './data/au-states.json';
 import chinaData from './data/china-provinces.json';
@@ -12,6 +12,11 @@ import { getAllMax, firstArray, usePlayer, formatDate } from './utils';
 import DataLayer from './DataLayer';
 import Loader from './Loader';
 import fipsData from './fipsData.json';
+
+import countries from './data/world.json';
+import states from './data/state.json';
+import provinces from './data/province.json';
+import counties from './data/county.json';
 
 const USA = '840';
 const Canada = '124';
@@ -112,22 +117,16 @@ function splitData(data) {
   };
 }
 
+const data = splitData({ countries, states, provinces, counties });
+
 const dataKey = 'confirmed';
 
 export default function LeafletPage() {
-  const [data, setData] = React.useState({});
-  React.useEffect(() => {
-    fetch('/api/data/all/historical/')
-      .then((r) => r.json())
-      .then((data) => {
-        setData(splitData(data));
-      });
-  }, []);
-
   const [highlight, setHighlight] = React.useState(null);
-  const firstData = React.useMemo(() => (data ? firstArray(data.world) : []), [
-    data,
-  ]);
+  const firstData = React.useMemo(
+    () => (data ? firstArray(data.world) : []),
+    [],
+  );
   const [zoom, setZoom] = React.useState(4);
   const showCounties = React.useMemo(() => zoom >= countyThreshold, [zoom]);
   const showProvinces = React.useMemo(() => zoom >= stateThreshold, [zoom]);
@@ -138,12 +137,13 @@ export default function LeafletPage() {
 
   const provinceMax = React.useMemo(
     () => getAllMax({ ...data.provinces, ...data.usStates }, dataKey),
-    [data],
+    [],
   );
-  const countiesMax = React.useMemo(() => getAllMax(data.usCounties, dataKey), [
-    data,
-  ]);
-  const worldMax = React.useMemo(() => getAllMax(data.world, dataKey), [data]);
+  const countiesMax = React.useMemo(
+    () => getAllMax(data.usCounties, dataKey),
+    [],
+  );
+  const worldMax = React.useMemo(() => getAllMax(data.world, dataKey), []);
 
   const loading = !data.world;
   const { play, playing, frame: index, setFrame: setIndex } = usePlayer(
@@ -186,7 +186,6 @@ export default function LeafletPage() {
                 right: 10px;
                 padding: 6px 8px;
                 font: 14px/16px Arial, Helvetica, sans-serif;
-                background: white;
                 background: rgba(255, 255, 255, 0.8);
                 box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
                 border-radius: 5px;

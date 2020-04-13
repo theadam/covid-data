@@ -47,8 +47,10 @@ export function getAllMax(data, dataKey) {
 
   keys.forEach((key) => {
     const item = data[key];
-    if (!item[item.length - 1]) console.log(key, item, item[item.length - 1]);
-    const val = item[item.length - 1][dataKey];
+    const dates = item.dates;
+    if (!dates[dates.length - 1])
+      console.log(key, item, dates[dates.length - 1]);
+    const val = dates[dates.length - 1][dataKey];
     if (val > max) {
       max = val;
     }
@@ -71,10 +73,10 @@ export function getMax(finals, key) {
 export function firstArray(data) {
   if (!data) return [];
   const firstKey = Object.keys(data)[0];
-  return data[firstKey];
+  return data[firstKey].dates;
 }
 
-const dateRegexp = /^(\d{4})-0?(\d{1,2})-0?(\d{1,2})T/;
+const dateRegexp = /^(\d{4})-0?(\d{1,2})-0?(\d{1,2})T?/;
 export function formatDate(d) {
   const [, , /*year*/ month, day] = dateRegexp.exec(d);
   return `${month}/${day}`;

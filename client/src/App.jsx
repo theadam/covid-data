@@ -5,8 +5,9 @@ import WorldPage from './WorldPage';
 import UsPage from './UsPage';
 import LeafletPage from './LeafletPage';
 import Header from './Header';
+import OpenLayersPage from './OpenLayersPage';
 
-import { Redirect, Router } from '@reach/router';
+import { Router } from '@reach/router';
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
       <Header />
       <Router style={{ flex: 1, display: 'flex' }}>
         <WorldPage path="/old_world" />
+        <OpenLayersPage path="/open_layers" />
         <UsPage path="/us" />
         <LeafletPage path="/" />
       </Router>

@@ -69,7 +69,7 @@ export default React.memo(
         style={(feature) => {
           const show = getShow(feature);
           const stroke = getStroke ? getStroke(feature) : show;
-          const array = data?.[feature.key];
+          const array = data?.[feature.key]?.dates;
           const item = array?.[index];
           const value = item?.[dataKey];
           const st = style(feature, item);

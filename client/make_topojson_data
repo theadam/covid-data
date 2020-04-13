@@ -38,8 +38,4 @@ land() {
     > src/data/land-$1.json
 }
 
-countries 50m
 countries 110m
-
-land 50m
-land 110m

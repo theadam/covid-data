@@ -44,27 +44,28 @@ func fetchCurrent(
 			break
 		}
 
-		county := columns[1]
-		country := columns[3]
-		lat := columns[5]
-		long := columns[6]
+		county := columns[9]
+		country := columns[1]
+		lat := columns[3]
+		long := columns[4]
 
-		confirmed, err := strconv.Atoi(columns[7])
+		confirmed, err := strconv.Atoi(columns[5])
 		if err != nil {
 			panic(err.Error())
 		}
 
-		deaths, err := strconv.Atoi(columns[8])
+		deaths, err := strconv.Atoi(columns[6])
 		if err != nil {
 			panic(err.Error())
 		}
 
 		if county != "" {
 			if country != "US" {
+                fmt.Println(country)
 				fmt.Println(strings.Join(columns, ", "))
 				panic("County found not in the US")
 			}
-			fipsData := FipsMap[columns[0]]
+			fipsData := FipsMap[columns[10]]
 			key := fipsData.Fips
 			usedUs[key] = true
 			countyData = append(countyData, data.CountyData{
@@ -80,7 +81,7 @@ func fetchCurrent(
 			})
 
 		} else {
-			country, province, countryCode := normalizeCountry(country, columns[2])
+			country, province, countryCode := normalizeCountry(country, columns[0])
 			if !skipGlobal(country, province) {
 				key := country
 				if province != "" {

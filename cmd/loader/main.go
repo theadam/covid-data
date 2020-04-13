@@ -65,42 +65,25 @@ func main() {
 	db := utils.OpenDB()
 	defer db.Close()
 
-	db.AutoMigrate(&data.Point, &data.CountyCases, &data.WorldHist, &data.CountyHist, &data.StateHist, &data.ProvinceHist)
+	db.AutoMigrate(&data.Point, &data.CountyCases)
 
-	ignoreStart := flag.Bool("all-dates", false, "Ignore start date")
 	flag.Parse()
 
-	if *ignoreStart {
-		fmt.Println("Loading all data")
-	} else {
-		fmt.Println("Reloading recent data")
-	}
+    fmt.Println("Loading all data")
 	fmt.Println()
 
-	var globalStart time.Time
-	if !*ignoreStart {
-		globalStart = startDate(db, &data.Point)
-	}
-
-	var usStart time.Time
-	if !*ignoreStart {
-		usStart = startDate(db, &data.CountyCases)
-	}
-
-    start := globalStart
-    if usStart.Before(start) {
-        start = usStart
-    }
+    // Gets all data for all time
+	var start time.Time
 
 	points, counties := jhu.GetData(start)
 
 	db.Transaction(func(tx *gorm.DB) error {
-		runAction("Loading Globals", func() { loadGlobals(tx, points, globalStart) })
-		runAction("Loading US", func() { loadUs(tx, counties, usStart) })
-		runAction("Loading World Cache Table", func() { data.LoadWorldTable(tx) })
-		runAction("Loading State Cache Table", func() { data.LoadStateTable(tx) })
-		runAction("Loading County Cache Table", func() { data.LoadCountyTable(tx) })
-		runAction("Loading Province Cache Table", func() { data.LoadProvinceTable(tx) })
+		runAction("Loading Globals", func() { loadGlobals(tx, points, start) })
+		runAction("Loading US", func() { loadUs(tx, counties, start) })
+		runAction("Loading World Cache Table", func() { data.WriteWorldData(tx) })
+		runAction("Loading Province Cache Table", func() { data.WriteProvinceData(tx) })
+		runAction("Loading State Cache Table", func() { data.WriteStateData(tx) })
+		runAction("Loading County Cache Table", func() { data.WriteCountyData(tx) })
 
 		return nil
 	})

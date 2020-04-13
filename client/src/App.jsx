@@ -34,9 +34,6 @@ function App() {
     >
       <Header />
       <Router style={{ flex: 1, display: 'flex' }}>
-        <WorldPage path="/old_world" />
-        <OpenLayersPage path="/open_layers" />
-        <UsPage path="/us" />
         <LeafletPage path="/" />
       </Router>
     </div>

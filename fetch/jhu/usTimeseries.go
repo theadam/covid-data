@@ -52,6 +52,7 @@ func toCountyData(timeData TimeValue) data.CountyData {
 		Date:      timeData.Date,
 		Lat:       fields["lat"],
 		Long:      fields["long"],
+        Population: OverrideForFips(fields["fips"]).Population,
 	}
 	return series
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { css } from '@emotion/core';
 import { Pane, Map, TileLayer } from 'react-leaflet';
-import { getAllMax, makePolyline } from './utils';
+import { getAllMax, makePolyline, perMillionPop } from './utils';
 import DataLayer from './DataLayer';
 import Loader from './Loader';
 import features, { data, countriesWithRegions } from './features';
@@ -19,11 +19,16 @@ var landMap = {
 const stateThreshold = 3;
 const countyThreshold = 5;
 
-const dataKey = 'confirmed';
 const defaultPosition = [0, 0];
 const defaultZoom = 2;
 
-export default function LeafletPage({ centeredItem, onSelect, index }) {
+export default function LeafletPage({
+  calculateValue,
+  centeredItem,
+  onSelect,
+  index,
+  population,
+}) {
   const mapRef = React.useRef();
   const [highlight, setHighlight] = React.useState(null);
   React.useEffect(() => {
@@ -48,14 +53,16 @@ export default function LeafletPage({ centeredItem, onSelect, index }) {
   ]);
 
   const provinceMax = React.useMemo(
-    () => getAllMax({ ...data.provinces, ...data.usStates }, dataKey),
-    [],
+    () => getAllMax({ ...data.provinces, ...data.usStates }, calculateValue),
+    [calculateValue],
   );
   const countiesMax = React.useMemo(
-    () => getAllMax(data.usCounties, dataKey),
-    [],
+    () => getAllMax(data.usCounties, calculateValue),
+    [calculateValue],
   );
-  const worldMax = React.useMemo(() => getAllMax(data.world, dataKey), []);
+  const worldMax = React.useMemo(() => getAllMax(data.world, calculateValue), [
+    calculateValue,
+  ]);
 
   const loading = !data.world;
   return (
@@ -111,37 +118,11 @@ export default function LeafletPage({ centeredItem, onSelect, index }) {
                 }
               `}
             >
-              {highlight === null ? (
-                <h4>Hover over an area to see information</h4>
-              ) : (
-                <span>
-                  <b>{highlight.displayName}</b>
-                  <br />
-                  {highlight?.data?.dates?.[index] ? (
-                    <span>
-                      <span>
-                        {highlight?.data?.dates?.[
-                          index
-                        ]?.confirmed.toLocaleString()}{' '}
-                        Confirmed Cases
-                        <br />
-                      </span>
-                      <span>
-                        {highlight?.data?.dates?.[
-                          index
-                        ]?.deaths.toLocaleString()}{' '}
-                        Deaths
-                        <br />
-                      </span>
-                    </span>
-                  ) : (
-                    <span>No Cases</span>
-                  )}
-                </span>
-              )}
+              <Highlight highlight={highlight} index={index} />
             </div>
           )}
           <DataLayer
+            calculateValue={calculateValue}
             onSelect={onSelect}
             index={index}
             name="usCounties"
@@ -152,6 +133,7 @@ export default function LeafletPage({ centeredItem, onSelect, index }) {
             max={countiesMax}
           />
           <DataLayer
+            calculateValue={calculateValue}
             onSelect={onSelect}
             index={index}
             name="usStates"
@@ -172,6 +154,7 @@ export default function LeafletPage({ centeredItem, onSelect, index }) {
             )}
           />
           <DataLayer
+            calculateValue={calculateValue}
             onSelect={onSelect}
             index={index}
             name="canada"
@@ -182,6 +165,7 @@ export default function LeafletPage({ centeredItem, onSelect, index }) {
             max={provinceMax}
           />
           <DataLayer
+            calculateValue={calculateValue}
             onSelect={onSelect}
             index={index}
             name="china"
@@ -192,6 +176,7 @@ export default function LeafletPage({ centeredItem, onSelect, index }) {
             max={provinceMax}
           />
           <DataLayer
+            calculateValue={calculateValue}
             onSelect={onSelect}
             index={index}
             name="australia"
@@ -202,6 +187,7 @@ export default function LeafletPage({ centeredItem, onSelect, index }) {
             max={provinceMax}
           />
           <DataLayer
+            calculateValue={calculateValue}
             onSelect={onSelect}
             index={index}
             name="world"
@@ -233,5 +219,44 @@ export default function LeafletPage({ centeredItem, onSelect, index }) {
         </Map>
       </div>
     </div>
+  );
+}
+
+function Highlight({ highlight, index }) {
+  if (highlight === null) return <h4>Hover over an area to see information</h4>;
+  const item = highlight.data;
+  const date = item?.dates?.[index];
+  const confirmed = date?.confirmed;
+  const deaths = date?.deaths;
+  const population = item?.population;
+  return (
+    <span>
+      <b>{highlight.displayName}</b>
+      <br />
+      {date ? (
+        <span>
+          <span>
+            {confirmed.toLocaleString()} Confirmed Cases
+            <br />
+          </span>
+          <span>
+            {deaths.toLocaleString()} Deaths
+            <br />
+          </span>
+          <span>
+            {perMillionPop(confirmed, population).toLocaleString()} Cases Per 1m
+            Population
+            <br />
+          </span>
+          <span>
+            {perMillionPop(deaths, population).toLocaleString()} Deaths Per 1m
+            Population
+            <br />
+          </span>
+        </span>
+      ) : (
+        <span>No Cases</span>
+      )}
+    </span>
   );
 }

@@ -4,8 +4,9 @@ import (
 	"covid-tracker/utils"
 	"fmt"
 	"io"
+	"regexp"
+	"strings"
 	"time"
-    "strings"
 
 	"github.com/pariz/gountries"
 )
@@ -155,9 +156,8 @@ func normalizeCountry(country string, province string) (string, string, string) 
     }
 
     if isCruise(province) {
-        province = ""
-    }
-    if isCruise(country) {
+        country =  "Cruise"
+    } else if isCruise(country) {
         province = country
         country = "Cruise"
     } else {
@@ -193,6 +193,12 @@ func padFips(fips string) string {
         return strings.Repeat("0", 5 - len(fips)) + fips
     }
     return fips
+}
+
+func extractFips(uid string) string {
+    pattern, err := regexp.Compile("^840")
+    if (err != nil) { panic(err.Error()) }
+    return pattern.ReplaceAllString(uid, "")
 }
 
 func collectLatest(values []TimeValue) map[string]TimeValue {

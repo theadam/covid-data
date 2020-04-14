@@ -32,6 +32,7 @@ func toDataPoint(timeData TimeValue) data.DataPoint {
         Lat:       fields["lat"],
         Long:      fields["long"],
         Date: timeData.Date,
+        Population: OverrideForProvince(fields["country"], fields["province"]).Population,
     }
     return series
 }

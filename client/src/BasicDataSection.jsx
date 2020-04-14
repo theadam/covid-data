@@ -2,7 +2,7 @@ import React from 'react';
 import Autocomplete from './AutocompleteInput';
 import Typography from '@material-ui/core/Typography';
 import { worldItem } from './features';
-import { formatDate, isToday } from './utils';
+import { formatPercent, perMillionPop, formatDate, isToday } from './utils';
 
 function changeStats(current, before) {
   if (!before) return null;
@@ -11,9 +11,8 @@ function changeStats(current, before) {
   return {
     confirmedChange,
     deathsChange,
-    confirmedPercent:
-      Math.round((confirmedChange / current.confirmed) * 1000) / 10 || 0,
-    deathsPercent: Math.round((deathsChange / current.deaths) * 1000) / 10 || 0,
+    confirmedPercent: formatPercent(confirmedChange / current.confirmed || 0),
+    deathsPercent: formatPercent(deathsChange / current.deaths || 0),
   };
 }
 
@@ -39,6 +38,9 @@ export default function BasicDataSection({ selectedItem, onSelect, index }) {
       <div style={{ marginBottom: 12 }}>
         <Typography variant="h4">
           {item.displayName} Data
+          <Typography variant="subtitle2" component="div">
+            Population {item.population.toLocaleString()}
+          </Typography>
           <Typography variant="caption" component="div">
             As of {!isToday(date.date) ? formatDate(date.date) : 'Today'}
           </Typography>
@@ -47,6 +49,10 @@ export default function BasicDataSection({ selectedItem, onSelect, index }) {
       <div style={{ marginBottom: 12 }}>
         <Typography variant="h6">
           {confirmed.toLocaleString()} Confirmed Cases
+          <Typography variant="subtitle2" component="span">
+            {' '}
+            ({perMillionPop(confirmed, item.population)} per 1m population)
+          </Typography>
           {stats && (
             <Typography variant="subtitle2" component="div">
               {stats.confirmedChange.toLocaleString()} added (
@@ -58,6 +64,10 @@ export default function BasicDataSection({ selectedItem, onSelect, index }) {
 
       <Typography variant="h6">
         {deaths.toLocaleString()} Deaths
+        <Typography variant="subtitle2" component="span">
+          {' '}
+          ({perMillionPop(deaths, item.population)} per 1m population)
+        </Typography>
         {dateBefore && (
           <Typography variant="subtitle2" component="div">
             {stats.deathsChange.toLocaleString()} added ({stats.deathsPercent}%

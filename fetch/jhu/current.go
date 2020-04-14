@@ -65,7 +65,11 @@ func fetchCurrent(
 				fmt.Println(strings.Join(columns, ", "))
 				panic("County found not in the US")
 			}
-			fipsData := FipsMap[columns[10]]
+			fipsData := FipsMap[padFips(columns[10])]
+            if fipsData.Fips == "" {
+                f := extractFips(columns[15])
+                fipsData = FipsMap[f]
+            }
 			key := fipsData.Fips
 			usedUs[key] = true
 			countyData = append(countyData, data.CountyData{
@@ -78,6 +82,7 @@ func fetchCurrent(
 				Date:      date,
 				Lat:       lat,
 				Long:      long,
+                Population: OverrideForFips(fipsData.Fips).Population,
 			})
 
 		} else {
@@ -98,6 +103,7 @@ func fetchCurrent(
 					Lat:             lat,
 					Long:            long,
 					ExternalCountry: columns[1],
+                    Population: OverrideForProvince(country, province).Population,
 				})
 			}
 		}

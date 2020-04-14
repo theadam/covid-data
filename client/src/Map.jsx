@@ -54,7 +54,7 @@ export default function Map({
           data,
           finals,
           dataSlice,
-          byCode: mapBy(dataSlice, dataIdKey),
+          byCode: mapBy(dataSlice, (item) => item[dataIdKey]),
           max: getMax(finals, dataKey),
         };
       }),

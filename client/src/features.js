@@ -157,6 +157,7 @@ export const allDataValues = [
 export const worldItem = {
   displayName: 'Worldwide',
   key: 'world',
+  population: worldValues.reduce((acc, v) => acc + v.population, 0),
   dates: dateRange.map((date, i) => {
     const forIndex = worldValues.reduce(
       (acc, item) => {

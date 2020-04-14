@@ -15,6 +15,7 @@ type DataPoint struct {
 	Date            time.Time `json:"date" gorm:"index:idx_date_country_code"`
 	Lat             string    `json:"lat"`
 	Long            string    `json:"long"`
+	Population            int    `json:"population"`
 	ExternalCountry string    `json:"-"`
 }
 
@@ -30,6 +31,7 @@ type CountyData struct {
 	Deaths    int       `json:"deaths"`
 	Date      time.Time `json:"date" gorm:"index;index:idx_date_state_county_fips"`
 	Lat       string    `json:"lat"`
+	Population            int    `json:"population"`
 	Long      string    `json:"long"`
 }
 

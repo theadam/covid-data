@@ -13,27 +13,27 @@ import (
 var base = "./client/src/data/"
 
 type Date struct {
-    time.Time
+	time.Time
 }
 
 type DateData struct {
 	Date      Date `json:"date"`
-	Confirmed int       `json:"confirmed"`
-	Deaths    int       `json:"deaths"`
+	Confirmed int  `json:"confirmed"`
+	Deaths    int  `json:"deaths"`
 }
 
 const timeLayout = "2006-01-02"
 
 func (u *Date) MarshalJSON() ([]byte, error) {
-    return []byte(`"` + u.Format(timeLayout) + `"`), nil
+	return []byte(`"` + u.Format(timeLayout) + `"`), nil
 }
 
 func makeDateData(date time.Time, confirmed int, deaths int) DateData {
-    return DateData{
-        Date: Date{date},
-        Confirmed: confirmed,
-        Deaths: deaths,
-    }
+	return DateData{
+		Date:      Date{date},
+		Confirmed: confirmed,
+		Deaths:    deaths,
+	}
 }
 
 func writeFile(json string, file string) {
@@ -71,15 +71,17 @@ func dateRange(db *gorm.DB) (time.Time, time.Time) {
 }
 
 func WriteDateRange(db *gorm.DB) {
-    min, max := dateRange(db)
-    cur := min
-    dates := make([]Date, 0)
-    for !cur.After(max) {
-        dates = append(dates, Date{cur})
-        cur = cur.AddDate(0, 0, 1)
-    }
-    data, err := json.Marshal(dates)
-    if err != nil { panic(err.Error()) }
+	min, max := dateRange(db)
+	cur := min
+	dates := make([]Date, 0)
+	for !cur.After(max) {
+		dates = append(dates, Date{cur})
+		cur = cur.AddDate(0, 0, 1)
+	}
+	data, err := json.Marshal(dates)
+	if err != nil {
+		panic(err.Error())
+	}
 
 	writeFile(string(data), "dateRange.json")
 }
@@ -138,20 +140,27 @@ func WriteWorldData(db *gorm.DB) {
 		CountryCode string    `json:"countryCode"`
 		Confirmed   int       `json:"confirmed"`
 		Deaths      int       `json:"deaths"`
+		Population     int     `json:"population"`
 	}
 	type mapValue struct {
-		Country     string    `json:"country"`
-		CountryCode string    `json:"countryCode"`
-        Dates       []DateData `json:"dates"`
+		Country     string     `json:"country"`
+		CountryCode string     `json:"countryCode"`
+		Dates       []DateData `json:"dates"`
+		Population     int     `json:"population"`
 	}
 	usBase := db.Model(&CountyCases).Where("date = data_points.date")
 	usConfirmed := usBase.Select("sum(confirmed)")
 	usDeaths := usBase.Select("sum(deaths)")
+	usPopulation := usBase.Select("sum(population)")
 
 	countryAggregates := db.Select(`
         date,
         country,
         country_code,
+        CASE
+          WHEN country != 'United States' THEN sum(population)
+          ELSE (?)
+        END as population,
         CASE
           WHEN country != 'United States' THEN sum(confirmed)
           ELSE (?)
@@ -160,27 +169,29 @@ func WriteWorldData(db *gorm.DB) {
           WHEN country != 'United States' THEN sum(deaths)
           ELSE (?)
         END as deaths
-    `, usConfirmed.QueryExpr(), usDeaths.QueryExpr()).Model(&Point).
+    `, usPopulation.QueryExpr(), usConfirmed.QueryExpr(), usDeaths.QueryExpr()).
+		Model(&Point).
 		Group("date, country, country_code").
 		Order("date, country")
 
 	var aggregates []shape
 	countryAggregates.Scan(&aggregates)
 
-    obj := make(map[string]mapValue)
+	obj := make(map[string]mapValue)
 
 	for _, item := range aggregates {
 		val, ok := obj[item.CountryCode]
 		if !ok {
-            val = mapValue{
-                Country: item.Country,
-                CountryCode: item.CountryCode,
-                Dates: make([]DateData, 0),
-            }
+			val = mapValue{
+				Country:     item.Country,
+				CountryCode: item.CountryCode,
+				Dates:       make([]DateData, 0),
+				Population:     item.Population,
+			}
 		}
-        val.Dates = append(val.Dates, makeDateData(
-            item.Date, item.Confirmed, item.Deaths,
-        ))
+		val.Dates = append(val.Dates, makeDateData(
+			item.Date, item.Confirmed, item.Deaths,
+		))
 		obj[item.CountryCode] = val
 	}
 
@@ -206,13 +217,15 @@ func WriteProvinceData(db *gorm.DB) {
 		CountryCode string    `json:"countryCode"`
 		Province    string    `json:"province"`
 		Confirmed   int       `json:"confirmed"`
+		Population   int       `json:"population"`
 		Deaths      int       `json:"deaths"`
 	}
 	type mapValue struct {
-		Country     string    `json:"country"`
-		CountryCode string    `json:"countryCode"`
-		Province    string    `json:"province"`
-        Dates       []DateData `json:"dates"`
+		Country     string     `json:"country"`
+		CountryCode string     `json:"countryCode"`
+		Province    string     `json:"province"`
+		Population   int       `json:"population"`
+		Dates       []DateData `json:"dates"`
 	}
 
 	query := db.Select(`
@@ -220,6 +233,7 @@ func WriteProvinceData(db *gorm.DB) {
         country,
         country_code,
         province,
+        sum(population) as population,
         sum(confirmed) as confirmed,
         sum(deaths) as deaths
     `).
@@ -240,16 +254,17 @@ func WriteProvinceData(db *gorm.DB) {
 		key := item.CountryCode + "-" + item.Province
 		val, ok := obj[key]
 		if !ok {
-            val = mapValue{
-                Country: item.Country,
-                CountryCode: item.CountryCode,
-                Province: item.Province,
-                Dates: make([]DateData, 0),
-            }
+			val = mapValue{
+				Country:     item.Country,
+				CountryCode: item.CountryCode,
+				Province:    item.Province,
+				Population:     item.Population,
+				Dates:       make([]DateData, 0),
+			}
 		}
-        val.Dates = append(val.Dates, makeDateData(
-            item.Date, item.Confirmed, item.Deaths,
-        ))
+		val.Dates = append(val.Dates, makeDateData(
+			item.Date, item.Confirmed, item.Deaths,
+		))
 		obj[key] = val
 	}
 
@@ -294,13 +309,15 @@ func WriteStateData(db *gorm.DB) {
 		State     string    `json:"state"`
 		FipsId    string    `json:"fipsId"`
 		Date      time.Time `json:"date"`
+		Population int       `json:"population"`
 		Confirmed int       `json:"confirmed"`
 		Deaths    int       `json:"deaths"`
 	}
 	type mapValue struct {
-		State     string    `json:"state"`
-		FipsId    string    `json:"fipsId"`
-        Dates       []DateData `json:"dates"`
+		State  string     `json:"state"`
+		FipsId string     `json:"fipsId"`
+		Population int       `json:"population"`
+		Dates  []DateData `json:"dates"`
 	}
 
 	fipsMap := stateFipsMap(db)
@@ -310,6 +327,7 @@ func WriteStateData(db *gorm.DB) {
 		Select(`
             date,
             state,
+            sum(population) as population,
             sum(confirmed) as confirmed,
             sum(deaths) as deaths
             `).
@@ -331,15 +349,16 @@ func WriteStateData(db *gorm.DB) {
 		item.FipsId = stateFips.FipsId
 		val, ok := obj[item.FipsId]
 		if !ok {
-            val = mapValue{
-                State: item.State,
-                FipsId: item.FipsId,
-                Dates: make([]DateData, 0),
-            }
+			val = mapValue{
+				State:  item.State,
+				FipsId: item.FipsId,
+				Population: item.Population,
+				Dates:  make([]DateData, 0),
+			}
 		}
-        val.Dates = append(val.Dates, makeDateData(
-            item.Date, item.Confirmed, item.Deaths,
-        ))
+		val.Dates = append(val.Dates, makeDateData(
+			item.Date, item.Confirmed, item.Deaths,
+		))
 		obj[item.FipsId] = val
 	}
 
@@ -360,16 +379,18 @@ func WriteStateData(db *gorm.DB) {
 
 func WriteCountyData(db *gorm.DB) {
 	type shape struct {
-		State  string `json:"state"`
-		County string `json:"county"`
-		FipsId string `json:"fipsId"`
+		State     string    `json:"state"`
+		County    string    `json:"county"`
+		FipsId    string    `json:"fipsId"`
 		Date      time.Time `json:"date"`
+		Population int       `json:"population"`
 		Confirmed int       `json:"confirmed"`
 		Deaths    int       `json:"deaths"`
 	}
 	type mapValue struct {
-        Id string `json:"id"`
-        Dates       []DateData `json:"dates"`
+		Id    string     `json:"id"`
+		Population int       `json:"population"`
+		Dates []DateData `json:"dates"`
 	}
 	query := db.
 		Select(`
@@ -377,6 +398,7 @@ func WriteCountyData(db *gorm.DB) {
             fips_id,
             state,
             county,
+            sum(population) as population,
             sum(confirmed) as confirmed,
             sum(deaths) as deaths
         `).
@@ -388,22 +410,22 @@ func WriteCountyData(db *gorm.DB) {
 	var results []shape
 	query.Scan(&results)
 
-    obj := make(map[string]mapValue)
+	obj := make(map[string]mapValue)
 
 	for _, item := range results {
-        val, ok := obj[item.FipsId]
+		val, ok := obj[item.FipsId]
 		if !ok {
-            val = mapValue{
-                Id: item.FipsId,
-                Dates: make([]DateData, 0),
-            }
+			val = mapValue{
+				Id:    item.FipsId,
+				Population:    item.Population,
+				Dates: make([]DateData, 0),
+			}
 		}
-        val.Dates = append(val.Dates, makeDateData(
-            item.Date, item.Confirmed, item.Deaths,
-        ))
+		val.Dates = append(val.Dates, makeDateData(
+			item.Date, item.Confirmed, item.Deaths,
+		))
 		obj[item.FipsId] = val
 	}
-
 
 	min, max := dateRange(db)
 	for k, val := range obj {
@@ -418,4 +440,3 @@ func WriteCountyData(db *gorm.DB) {
 	}
 	writeFile(string(bytes), "county.json")
 }
-

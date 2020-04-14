@@ -9,7 +9,7 @@ const colorEnd = '#800026';
 const interpolateReds = interp(colorStart, colorEnd);
 
 function interpolate(data, max) {
-  if (!data) {
+  if (data === null || data === undefined) {
     return color(colorStart).brighter(0.2).formatHex();
   }
   return color(
@@ -28,9 +28,9 @@ export default React.memo(
     getStroke,
     onHighlight,
     max,
-    dataKey = 'confirmed',
     style = () => ({}),
     onSelect,
+    calculateValue,
   }) => {
     const propsRef = React.useRef({ index, data, style });
     propsRef.current = { index, data, style };
@@ -73,10 +73,11 @@ export default React.memo(
         style={(feature) => {
           const show = getShow(feature);
           const stroke = getStroke ? getStroke(feature) : show;
-          const array = data?.[feature.key]?.dates;
-          const item = array?.[index];
-          const value = item?.[dataKey];
-          const st = style(feature, item);
+          const item = data?.[feature.key];
+          const dates = item?.dates;
+          const date = dates?.[index];
+          const value = calculateValue(item, index);
+          const st = style(feature, item, date);
           return {
             weight: 1,
             stroke,

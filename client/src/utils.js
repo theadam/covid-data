@@ -33,16 +33,18 @@ export function getDataIndex(data, index) {
   });
 }
 
-export function mapBy(finals, key) {
+export function mapBy(finals, fn) {
   const result = {};
   finals.forEach((final) => {
-    if (!final || !final[key]) return;
-    result[final[key]] = final;
+    if (!final) return;
+    const key = fn(final);
+    if (!key) return;
+    result[key] = final;
   });
   return result;
 }
 
-export function getAllMax(data, dataKey) {
+export function getAllMax(data, getter) {
   let max = 0;
   const keys = Object.keys(data || {});
 
@@ -51,7 +53,7 @@ export function getAllMax(data, dataKey) {
     const dates = item.dates;
     if (!dates[dates.length - 1])
       console.log(key, item, dates[dates.length - 1]);
-    const val = dates[dates.length - 1][dataKey];
+    const val = getter(item, dates.length - 1);
     if (val > max) {
       max = val;
     }
@@ -264,3 +266,20 @@ export function mapObject(obj, fn) {
   }, {});
 }
 
+export function roundTenths(p) {
+  return Math.round(p * 10) / 10;
+}
+
+export function formatPercent(p) {
+  return roundTenths(p * 100);
+}
+
+export function empty(val) {
+  return val === null || val === undefined;
+}
+
+export function perMillionPop(value, pop) {
+  if (empty(value) || !pop) return undefined;
+  const ratio = pop / 1000000;
+  return Math.round(value / ratio);
+}

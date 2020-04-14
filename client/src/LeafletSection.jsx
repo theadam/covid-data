@@ -90,6 +90,7 @@ export default function LeafletPage({ centeredItem, onSelect, index }) {
             <div
               className="highlight-info"
               css={css`
+                pointer-events: none;
                 z-index: 1000;
                 position: absolute;
                 top: 10px;

@@ -67,6 +67,7 @@ export default function LeafletPage({ centeredItem, onSelect, index }) {
         style={{
           flex: 1,
           flexBasis: 600,
+          maxHeight: '65vh',
           display: 'flex',
         }}
       >

@@ -18,7 +18,7 @@ import { css as globalCss } from 'emotion';
 import ControlledHighlight from './ControlledHighlight';
 import Loader from './Loader';
 import { worldItem, dateRange, allData } from './features';
-import { formatDate, values } from './utils';
+import { formatDate, values, perMillionPop } from './utils';
 
 function calculateIncrease(current, old) {
   if (old === null || old === undefined) return undefined;
@@ -32,6 +32,10 @@ const mapCalculations = {
     calculateIncrease(item.confirmed, items?.[i - 1]?.confirmed),
   increaseDeaths: (item, i, items) =>
     calculateIncrease(item.confirmed, items?.[i - 1]?.confirmed),
+  confirmedPerMillion: (date, i, dates, item) =>
+    perMillionPop(date.confirmed, item.population),
+  deathsPerMillion: (date, i, dates, item) =>
+    perMillionPop(date.deaths, item.population),
 };
 
 export const typeText = {
@@ -39,6 +43,8 @@ export const typeText = {
   deaths: 'Deaths',
   increaseConfirmed: '% Change in Cases',
   increaseDeaths: '% Change in Deaths',
+  confirmedPerMillion: 'Confirmed Cases Per 1M Population',
+  deathsPerMillion: 'Deaths Per 1M Population',
 };
 
 const formatValue = {
@@ -46,6 +52,9 @@ const formatValue = {
   deaths: (n) => `${n.toLocaleString()} Deaths`,
   increaseConfirmed: (n) => `${n.toLocaleString()}% Growth of Cases`,
   increaseDeaths: (n) => `${n.toLocaleString()}% Growth of Deaths`,
+  confirmedPerMillion: (n) =>
+    `${n.toLocaleString()} Confirmed Cases Per 1M Population`,
+  deathsPerMillion: (n) => `${n.toLocaleString()} DeathsPer 1M Population`,
 };
 
 const legendClass = globalCss`
@@ -170,7 +179,7 @@ export default function ({
             ...item,
             dates: compact(
               item.dates.map((date, i, dates) => {
-                const y = calc(date, i, dates);
+                const y = calc(date, i, dates, item);
                 return {
                   ...item,
                   ...date,

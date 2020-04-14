@@ -10,7 +10,7 @@ const interpolateReds = interp(colorStart, colorEnd);
 
 function interpolate(data, max) {
   if (!data) {
-    return colorStart;
+    return color(colorStart).brighter(0.2).formatHex();
   }
   return color(
     interpolateReds(Math.sqrt(Math.sqrt(data)) / Math.sqrt(Math.sqrt(max))),

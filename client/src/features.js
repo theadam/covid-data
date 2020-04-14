@@ -11,7 +11,7 @@ import states from './data/state.json';
 import provinces from './data/province.json';
 import counties from './data/county.json';
 import dateRange from './data/dateRange.json';
-import { sort } from './utils';
+import { values, sort } from './utils';
 
 export { dateRange };
 
@@ -116,11 +116,6 @@ function splitData(data) {
 }
 export const data = splitData({ countries, states, provinces, counties });
 
-function values(obj) {
-  const keys = Object.keys(obj);
-  return keys.map((key) => obj[key]);
-}
-
 function mergeAll(obj) {
   const keys = Object.keys(obj);
   return keys.reduce((acc, key) => ({ ...acc, ...obj[key] }), {});
@@ -143,7 +138,8 @@ export const allDataValues = [
 ];
 
 export const worldItem = {
-  displayName: 'World',
+  displayName: 'Worldwide',
+  key: 'world',
   dates: dateRange.map((date, i) => {
     const forIndex = worldValues.reduce(
       (acc, item) => {

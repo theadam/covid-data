@@ -11,25 +11,29 @@ const filterOptions = createFilterOptions({
   limit: 100,
 });
 
-export default function ({ selected, onChange }) {
+export default function ({ multiple, selected, onChange }) {
   return (
     <Autocomplete
-      id="combo-box-demo"
+      multiple={multiple || false}
       filterOptions={filterOptions}
       options={allDataValues}
       getOptionLabel={(option) => option.displayName}
       style={{ width: 300 }}
       selectOnFocus
+      limitTags={4}
       renderInput={({ value, onChange, ...params }) => (
         <TextField
           {...params}
           InputProps={{
             ...params.InputProps,
-            startAdornment: (
-              <InputAdornment position="start">
-                <PublicIcon color="primary" />
-              </InputAdornment>
-            ),
+            startAdornment:
+              multiple && selected && selected.length > 0 ? (
+                params.InputProps.startAdornment
+              ) : (
+                <InputAdornment position="start">
+                  <PublicIcon color="primary" />
+                </InputAdornment>
+              ),
           }}
           label="Location Search"
           variant="outlined"

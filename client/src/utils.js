@@ -252,3 +252,9 @@ export function makePolyline(geometry) {
   const coords = geometry.coordinates.map(flipCoords);
   return polyline(coords);
 }
+
+export function values(obj) {
+  const keys = Object.keys(obj);
+  return keys.map((key) => obj[key]);
+}
+

@@ -1,90 +1,23 @@
 import React from 'react';
+import AppBar from '@material-ui/core/AppBar';
+import Toolbar from '@material-ui/core/Toolbar';
+import Typography from '@material-ui/core/Typography';
 import { css } from '@emotion/core';
-import { Link } from '@reach/router';
-
-const ActiveLink = ({ ...props }) => {
-  return (
-    <Link
-      getProps={({ isCurrent }) => (isCurrent ? { className: 'current' } : {})}
-      {...props}
-    />
-  );
-};
 
 export default function Header() {
   return (
-    <div
+    <AppBar
+      color="primary"
+      position="static"
       css={css`
-        margin-top: 30px;
-        @media only screen and (max-width: 1000px) {
-          margin-top: 10px;
-        }
-        display: flex;
-        margin-left: 30px;
-        margin-right: 30px;
-        @media only screen and (max-width: 1000px) {
-          margin-left: 10px;
-          margin-right: 10px;
-        }
+        margin-bottom: 20px;
       `}
     >
-      <div
-        css={css`
-          flex: 1;
-          display: flex;
-          padding: 10px 0;
-          justify-content: space-between;
-          align-items: flex-end;
-        `}
-      >
-        <div
-          css={css`
-            font-size: 40px;
-            @media only screen and (max-width: 1000px) {
-              font-size: 20px;
-            }
-            color: #333;
-            font-weight: bold;
-          `}
-        >
-          Covid Analytics
-        </div>
-        <div
-          css={css`
-            text-transform: uppercase;
-            font-size: 20px;
-            display; flex;
-            flex-direction: row;
-            a {
-              margin-left: 20px;
-              @media only screen and (max-width: 1000px) {
-                margin-left: 5px;
-                font-size: 10px;
-              }
-              text-decoration: none;
-              color: #1e88e5;
-              padding: 4px 8px;
-              &:hover {
-                background-color: #eeeeee;
-              }
-              &.current {
-                color: #333;
-                cursor: default;
-                pointer-events: none;
-                font-weight: bold;
-                &:hover {
-                  background-color: white;
-                }
-              }
-            }
-          `}
-        >
-          {/*
-          <ActiveLink to="/world">World</ActiveLink>
-          <ActiveLink to="/us">Us</ActiveLink>
-          */}
-        </div>
-      </div>
-    </div>
+      <Toolbar>
+        <Typography variant="h6" color="inherit">
+          Covid Data
+        </Typography>
+      </Toolbar>
+    </AppBar>
   );
 }

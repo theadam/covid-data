@@ -30,6 +30,7 @@ export default React.memo(
     max,
     dataKey = 'confirmed',
     style = () => ({}),
+    onSelect,
   }) => {
     const propsRef = React.useRef({ index, data, style });
     propsRef.current = { index, data, style };
@@ -63,6 +64,9 @@ export default React.memo(
                 ),
               });
               onHighlight(null);
+            },
+            click: () => {
+              onSelect(propsRef.current?.data?.[feature.key]);
             },
           });
         }}

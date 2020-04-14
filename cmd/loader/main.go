@@ -84,6 +84,7 @@ func main() {
 		runAction("Writing Province JSON data", func() { data.WriteProvinceData(tx) })
 		runAction("Writing State JSON data", func() { data.WriteStateData(tx) })
 		runAction("Writing County JSON data", func() { data.WriteCountyData(tx) })
+		runAction("Writing Date Range JSON data", func() { data.WriteDateRange(tx) })
 
 		return nil
 	})

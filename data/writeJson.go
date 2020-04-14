@@ -70,6 +70,20 @@ func dateRange(db *gorm.DB) (time.Time, time.Time) {
 	return min, max
 }
 
+func WriteDateRange(db *gorm.DB) {
+    min, max := dateRange(db)
+    cur := min
+    dates := make([]Date, 0)
+    for !cur.After(max) {
+        dates = append(dates, Date{cur})
+        cur = cur.AddDate(0, 0, 1)
+    }
+    data, err := json.Marshal(dates)
+    if err != nil { panic(err.Error()) }
+
+	writeFile(string(data), "dateRange.json")
+}
+
 func str(item interface{}) string {
 	bs, _ := json.Marshal(item)
 	return string(bs)

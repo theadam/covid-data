@@ -1,5 +1,6 @@
 import React from 'react';
 import { geoPath } from 'd3-geo';
+import { polyline } from 'leaflet';
 
 export const debounce = (fn, time) => {
   let cancel;
@@ -80,6 +81,21 @@ const dateRegexp = /^(\d{4})-0?(\d{1,2})-0?(\d{1,2})T?/;
 export function formatDate(d) {
   const [, , /*year*/ month, day] = dateRegexp.exec(d);
   return `${month}/${day}`;
+}
+
+export function toDate(d) {
+  const [, year, month, day] = dateRegexp.exec(d);
+  return new Date(Number(year), Number(month) - 1, Number(day));
+}
+
+export function isToday(d) {
+  const date = toDate(d);
+  const today = new Date();
+  return (
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+  );
 }
 
 export function usePlayer(length) {
@@ -218,4 +234,21 @@ export const covidTipIncludingNoCases = covidTipMaker(true);
 
 export function pluck(keys, map) {
   return keys.reduce((acc, key) => ({ ...acc, [key]: map[key] }), {});
+}
+
+export function sort(list, fn) {
+  const copy = list.slice();
+  copy.sort(fn);
+  return copy;
+}
+
+function flipCoords(coords) {
+  if (coords.length === 0) return coords;
+  if (Array.isArray(coords[0])) return coords.map(flipCoords);
+  return [coords[1], coords[0]];
+}
+
+export function makePolyline(geometry) {
+  const coords = geometry.coordinates.map(flipCoords);
+  return polyline(coords);
 }

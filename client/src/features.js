@@ -11,7 +11,7 @@ import states from './data/state.json';
 import provinces from './data/province.json';
 import counties from './data/county.json';
 import dateRange from './data/dateRange.json';
-import { values, sort } from './utils';
+import { values, sort, mapBy, mapObject } from './utils';
 
 export { dateRange };
 
@@ -87,6 +87,23 @@ function createFeatures() {
 const features = createFeatures();
 export default features;
 
+function mapCountryData(featureCollection, data) {
+  const featureMap = mapBy(
+    featureCollection.features,
+    (feature) => feature.key,
+  );
+  return mapObject(data, (item, key) => {
+    const feature = featureMap[key];
+
+    return {
+      ...data[key],
+      key: feature ? feature.key : item.countryCode,
+      displayName: feature ? feature.displayName : item.country,
+      geometry: feature ? feature.geometry : null,
+    };
+  });
+}
+
 function pluckFeatureData(featureCollection, data) {
   return featureCollection.features.reduce(
     (acc, { geometry, displayName, key }) => {
@@ -106,7 +123,7 @@ function pluckFeatureData(featureCollection, data) {
 
 function splitData(data) {
   return {
-    world: pluckFeatureData(features.world, data.countries),
+    world: mapCountryData(features.world, data.countries),
     usStates: pluckFeatureData(features.usStates, data.states),
     usCounties: pluckFeatureData(features.usCounties, data.counties),
     china: pluckFeatureData(features.china, data.provinces),

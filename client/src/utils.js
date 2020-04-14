@@ -258,3 +258,9 @@ export function values(obj) {
   return keys.map((key) => obj[key]);
 }
 
+export function mapObject(obj, fn) {
+  return Object.keys(obj).reduce((acc, key) => {
+    return { ...acc, [key]: fn(obj[key], key) };
+  }, {});
+}
+

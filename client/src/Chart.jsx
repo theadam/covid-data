@@ -185,7 +185,6 @@ export default function ({
       ),
     );
   }, [selected, type]);
-  console.log(data?.[Object.keys(data)[0]]);
   const [domain, rawSetDomain] = React.useState(() => getInitialDomain(data));
   function setDomain(d) {
     setCrosshairValues([]);

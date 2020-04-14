@@ -5,6 +5,7 @@ import { getAllMax, makePolyline } from './utils';
 import DataLayer from './DataLayer';
 import Loader from './Loader';
 import features, { data, countriesWithRegions } from './features';
+import Snackbar from './Snackbar';
 
 var landMap = {
   ext: 'png',
@@ -27,9 +28,13 @@ export default function LeafletPage({ centeredItem, onSelect, index }) {
   const [highlight, setHighlight] = React.useState(null);
   React.useEffect(() => {
     if (centeredItem) {
-      mapRef.current.leafletElement.fitBounds(
-        makePolyline(centeredItem.geometry).getBounds(),
-      );
+      if (centeredItem.geometry) {
+        mapRef.current.leafletElement.fitBounds(
+          makePolyline(centeredItem.geometry).getBounds(),
+        );
+      } else {
+        Snackbar.open(`${centeredItem.displayName} is too small for this map`);
+      }
     } else {
       mapRef.current.leafletElement.setView(defaultPosition, defaultZoom);
     }

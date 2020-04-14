@@ -5,6 +5,7 @@ import Header from './Header';
 import styled from '@emotion/styled';
 import MapCard from './MapCard';
 import ChartCard from './ChartCard';
+import Snackbar from './Snackbar';
 
 const cardWidth = 650;
 
@@ -52,6 +53,7 @@ function App() {
         <MapCard />
         <ChartCard />
       </Body>
+      <Snackbar />
     </div>
   );
 }

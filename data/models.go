@@ -8,11 +8,11 @@ import (
 type DataPoint struct {
 	gorm.Model
 	Province        string    `json:"province"`
-	Country         string    `json:"country" gorm:"index:idx_date_country_code"`
-	CountryCode     string    `json:"countryCode" gorm:"index:idx_date_country_code"`
+	Country         string    `json:"country"`
+	CountryCode     string    `json:"countryCode"`
 	Confirmed       int       `json:"confirmed"`
 	Deaths          int       `json:"deaths"`
-	Date            time.Time `json:"date" gorm:"index:idx_date_country_code"`
+	Date            time.Time `json:"date"`
 	Lat             string    `json:"lat"`
 	Long            string    `json:"long"`
 	Population            int    `json:"population"`
@@ -23,13 +23,13 @@ var Point DataPoint
 
 type CountyData struct {
 	gorm.Model
-	FipsId    string    `json:"fipsId" gorm:"index:idx_date_state_county_fips"`
-	State     string    `json:"state" gorm:"index:idx_date_state_county_fips"`
+	FipsId    string    `json:"fipsId"`
+	State     string    `json:"state"`
 	StateCode string    `json:"stateCode"`
-	County    string    `json:"county" gorm:"index:idx_date_state_county_fips"`
+	County    string    `json:"county"`
 	Confirmed int       `json:"confirmed"`
 	Deaths    int       `json:"deaths"`
-	Date      time.Time `json:"date" gorm:"index;index:idx_date_state_county_fips"`
+	Date      time.Time `json:"date"`
 	Lat       string    `json:"lat"`
 	Population            int    `json:"population"`
 	Long      string    `json:"long"`

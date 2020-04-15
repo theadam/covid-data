@@ -43,16 +43,6 @@ func loadUs(db *gorm.DB, counties []data.CountyData, start time.Time) {
 	}
 }
 
-func startDate(db *gorm.DB, table interface{}) time.Time {
-	var dates []time.Time
-	db.Model(table).Select("max(date) as date").Pluck("date", &dates)
-	if len(dates) > 0 {
-		return dates[0].AddDate(0, 0, -1)
-	}
-	var zero time.Time
-	return zero
-}
-
 func runAction(name string, action func()) {
 	now := time.Now()
 	fmt.Println("Starting " + name)
@@ -77,15 +67,11 @@ func main() {
 
 	points, counties := jhu.GetData(start)
 
-	db.Transaction(func(tx *gorm.DB) error {
-		runAction("Loading Globals", func() { loadGlobals(tx, points, start) })
-		runAction("Loading US", func() { loadUs(tx, counties, start) })
-		runAction("Writing World JSON data", func() { data.WriteWorldData(tx) })
-		runAction("Writing Province JSON data", func() { data.WriteProvinceData(tx) })
-		runAction("Writing State JSON data", func() { data.WriteStateData(tx) })
-		runAction("Writing County JSON data", func() { data.WriteCountyData(tx) })
-		runAction("Writing Date Range JSON data", func() { data.WriteDateRange(tx) })
-
-		return nil
-	})
+    runAction("Loading Globals", func() { loadGlobals(db, points, start) })
+    runAction("Loading US", func() { loadUs(db, counties, start) })
+    runAction("Writing World JSON data", func() { data.WriteWorldData(db) })
+    runAction("Writing Province JSON data", func() { data.WriteProvinceData(db) })
+    runAction("Writing State JSON data", func() { data.WriteStateData(db) })
+    runAction("Writing County JSON data", func() { data.WriteCountyData(db) })
+    runAction("Writing Date Range JSON data", func() { data.WriteDateRange(db) })
 }

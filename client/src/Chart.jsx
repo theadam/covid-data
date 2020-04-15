@@ -163,7 +163,7 @@ export default function ({
 }) {
   const [crosshairValues, setCrosshairValues] = React.useState([]);
   const brushing = React.useRef(false);
-  const formattedDates = dateRange.map(formatDate);
+  const formattedDates = React.useMemo(() => dateRange.map(formatDate), []);
   const formatter = React.useMemo(() => formatValue[type], [type]);
   const text = React.useMemo(() => typeText[type], [type]);
   const data = React.useMemo(() => {
@@ -195,15 +195,15 @@ export default function ({
     );
   }, [selected, type]);
   const [domain, rawSetDomain] = React.useState(() => getInitialDomain(data));
-  function setDomain(d) {
+  const setDomain = React.useCallback((d) => {
     setCrosshairValues([]);
     rawSetDomain(d);
-  }
+  }, []);
   React.useEffect(() => {
     setDomain(getInitialDomain(data));
-  }, [data]);
+  }, [setDomain, data]);
 
-  const items = values(data);
+  const items = React.useMemo(() => values(data), [data]);
 
   return (
     <div

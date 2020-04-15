@@ -76,6 +76,7 @@ export default function ChartCard() {
         role={undefined}
         transition
         disablePortal
+        style={{ zIndex: 1000 }}
       >
         {({ TransitionProps, placement }) => (
           <Grow

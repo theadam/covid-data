@@ -67,10 +67,11 @@ func parseTimeSeries(
 			if item == "" {
 				item = "0"
 			}
-			number, err := strconv.Atoi(item)
+            float, err := strconv.ParseFloat(item, 64)
 			if err != nil {
 				panic(err.Error())
 			}
+            number := int(float)
 
 			extraData := timeSeriesRow.ExtractExtraData(columns)
 

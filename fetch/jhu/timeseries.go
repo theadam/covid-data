@@ -1,6 +1,7 @@
 package jhu
 
 import (
+	"covid-tracker/data"
 	"encoding/csv"
 	"io"
 	"strconv"
@@ -18,31 +19,28 @@ type TimeValue struct {
 	Key       string
 }
 
-type TimeseriesRow interface {
+type DataRow interface {
 	TimeColumns([]string, string) []string
-	ExtractExtraData([]string) map[string]string
-	Key(map[string]string) string
-	Skip(map[string]string) bool
+	ToDataPoint([]string) *data.DataPoint
 }
 
 func parseTimeSeries(
 	path string,
 	kind string,
-	start time.Time,
-	timeSeriesRow TimeseriesRow,
-) []TimeValue {
+	dataRow DataRow,
+) []*data.DataPoint {
 	body := fetchFromRepo("master", path)
 	defer body.Close()
 
 	reader := csv.NewReader(body)
 
-	rows := make([]TimeValue, 0)
+	rows := make([]*data.DataPoint, 0)
 	header, err := reader.Read()
 	if err != nil {
 		panic(err.Error())
 	}
 
-	dateHeaders := timeSeriesRow.TimeColumns(header, kind)
+	dateHeaders := dataRow.TimeColumns(header, kind)
 	dates := getDates(dateHeaders)
 
 	for {
@@ -54,15 +52,11 @@ func parseTimeSeries(
 			panic(err.Error())
 		}
 
-		dateData := timeSeriesRow.TimeColumns(columns, kind)
+		dateData := dataRow.TimeColumns(columns, kind)
 
 		// parse each item in the time series
 		for i, item := range dateData {
 			date := dates[i]
-			// Only handle dates after start
-			if date.Before(start) {
-				continue
-			}
 
 			if item == "" {
 				item = "0"
@@ -73,93 +67,61 @@ func parseTimeSeries(
 			}
             number := int(float)
 
-			extraData := timeSeriesRow.ExtractExtraData(columns)
+			dataPoint := dataRow.ToDataPoint(columns)
 
-			if !timeSeriesRow.Skip(extraData) {
+			if dataPoint != nil {
 				confirmed, deaths := getValuesForKind(kind, number)
-				timeData := TimeValue{
-					Date:      date,
-					Confirmed: confirmed,
-					Deaths:    deaths,
-					ExtraData: extraData,
-					Key:       timeSeriesRow.Key(extraData),
-				}
+                dataPoint.Date = date
+                dataPoint.Confirmed = confirmed
+                dataPoint.Deaths = deaths
 
-				rows = append(rows, timeData)
+				rows = append(rows, dataPoint)
 			}
 		}
 	}
 	return rows
 }
 
-func fetchGlobalConfirmed(start time.Time) []TimeValue {
+func fetchGlobalConfirmed() []*data.DataPoint {
 	return parseTimeSeries(
 		"csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv",
 		"confirmed",
-		start,
 		&GlobalTS,
 	)
 }
 
-func fetchGlobalDeaths(start time.Time) []TimeValue {
+func fetchGlobalDeaths() []*data.DataPoint {
 	return parseTimeSeries(
 		"csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv",
 		"deaths",
-		start,
 		&GlobalTS,
 	)
 }
 
-func fetchUsTerritoriesConfirmed(start time.Time) []TimeValue {
+func fetchUsConfirmed() []*data.DataPoint{
 	return parseTimeSeries(
 		"csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv",
 		"confirmed",
-		start,
-		&UsTerritoryTS,
-	)
-}
-
-func fetchUsTerritoriesDeaths(start time.Time) []TimeValue {
-	return parseTimeSeries(
-		"csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv",
-		"deaths",
-		start,
-		&UsTerritoryTS,
-	)
-}
-
-func fetchUsConfirmed(start time.Time) []TimeValue {
-	return parseTimeSeries(
-		"csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv",
-		"confirmed",
-		start,
 		&UsTS,
 	)
 }
 
-func fetchUsDeaths(start time.Time) []TimeValue {
+func fetchUsDeaths() []*data.DataPoint {
 	return parseTimeSeries(
 		"csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv",
 		"deaths",
-		start,
 		&UsTS,
 	)
 }
 
-func timeSeriesGlobals(start time.Time) []TimeValue {
-	confirmed := fetchGlobalConfirmed(start)
-	deaths := fetchGlobalDeaths(start)
+func timeSeriesGlobals() []*data.DataPoint {
+	confirmed := fetchGlobalConfirmed()
+	deaths := fetchGlobalDeaths()
 	return consolidateValues(append(confirmed, deaths...))
 }
 
-func timeSeriesUsTerritories(start time.Time) []TimeValue {
-	confirmed := fetchUsTerritoriesConfirmed(start)
-	deaths := fetchUsTerritoriesDeaths(start)
-	return consolidateValues(append(confirmed, deaths...))
-}
-
-func timeSeriesUs(start time.Time) []TimeValue {
-	confirmed := fetchUsConfirmed(start)
-	deaths := fetchUsDeaths(start)
+func timeSeriesUs() []*data.DataPoint {
+	confirmed := fetchUsConfirmed()
+	deaths := fetchUsDeaths()
 	return consolidateValues(append(confirmed, deaths...))
 }

@@ -8,45 +8,28 @@ import (
 
 var now = time.Now()
 
-var sampleWorld = []DataPoint{
-    DataPoint{
-        Province: "Quebec",
+var sampleWorld = []*DataPoint{
+    &DataPoint{
         Country: "Canada",
         CountryCode: "124",
-        Confirmed: 10,
-        Deaths: 9,
-        Population: 400,
-        Date: now.AddDate(0, 0, -1),
-    },
-    DataPoint{
-        Province: "Quebec",
-        Country: "Canada",
-        CountryCode: "124",
-        Confirmed: 10,
-        Deaths: 9,
-        Population: 400,
-        Date: now,
-    },
-}
 
-var sampleUs = []CountyData{
-    CountyData{
-        State: "Georgia",
-        County: "Fulton",
-        FipsId: "12345",
-        Confirmed: 10,
-        Deaths: 9,
-        Population: 400,
+        Province: "Quebec",
+
         Date: now.AddDate(0, 0, -1),
-    },
-    CountyData{
-        State: "Georgia",
-        County: "Fulton",
-        FipsId: "12345",
         Confirmed: 10,
         Deaths: 9,
         Population: 400,
+    },
+    &DataPoint{
+        Country: "Canada",
+        CountryCode: "124",
+
+        Province: "Quebec",
+
         Date: now,
+        Confirmed: 10,
+        Deaths: 9,
+        Population: 400,
     },
 }
 
@@ -62,7 +45,7 @@ func TestMissingDatePanics(t *testing.T) {
             t.Errorf("The code was expected to panic")
         }
     }()
-    CreateWorldData(append(sampleWorld, DataPoint{
+    CreateWorldData(append(sampleWorld, &DataPoint{
         Province: "",
         Country: "China",
         CountryCode: "123",
@@ -70,12 +53,12 @@ func TestMissingDatePanics(t *testing.T) {
         Deaths: 9,
         Population: 400,
         Date: time.Now(),
-    }), []CountyData{})
+    }))
 }
 
 
 func TestWorldCombinePoints(t *testing.T) {
-    data := parseJson(CreateWorldData(sampleWorld, []CountyData{}))
+    data := parseJson(CreateWorldData(sampleWorld))
     canada := data["124"].(map[string]interface{})
     if len(data) != 1 {
         t.Errorf("Too many items in map: %d", len(data))
@@ -92,29 +75,10 @@ func TestWorldCombinePoints(t *testing.T) {
 }
 
 func TestDates(t *testing.T) {
-    data := parseJson(CreateWorldData(sampleWorld, []CountyData{}))
+    data := parseJson(CreateWorldData(sampleWorld))
     canada := data["124"].(map[string]interface{})
     dates := canada["dates"].([]interface{})
     if (len(dates) != 2) {
         t.Errorf("Canada has the wrong number of dates: %d", len(dates))
-    }
-}
-
-func TestState(t *testing.T) {
-    data := parseJson(CreateStateData([]DataPoint{}, sampleUs))
-    _, ok := data["12"]
-    if !ok {
-        t.Error("Georgia's fips id is not found")
-    }
-    if sampleUs[0].FipsId != "12345" {
-        t.Error("FipsId was changed")
-    }
-}
-
-func test(t *testing.T) {
-    data := parseJson(CreateStateData([]DataPoint{}, sampleUs))
-    _, ok := data["12"]
-    if !ok {
-        t.Error("Georgia's fips id is not found")
     }
 }

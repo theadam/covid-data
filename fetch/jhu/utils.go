@@ -1,6 +1,7 @@
 package jhu
 
 import (
+	"covid-tracker/data"
 	"covid-tracker/utils"
 	"fmt"
 	"io"
@@ -67,30 +68,22 @@ func mergeSingleValue(values []TimeValue, value TimeValue) []TimeValue {
 	}
 }
 
-type Key struct {
-    Timestamp int64
-    Key string
-}
-
-func consolidateValues(values []TimeValue) []TimeValue {
-    mapper := make(map[Key]TimeValue)
+func consolidateValues(values []*data.DataPoint) []*data.DataPoint {
+    mapper := make(map[data.DataPointKey]*data.DataPoint)
     for _, value := range values {
-        key := Key{
-            Timestamp: value.Date.Unix(),
-            Key: value.Key,
-        }
+        key := *value.Key()
+
         current, ok := mapper[key]
         if ok {
             current.Confirmed += value.Confirmed
             current.Deaths += value.Deaths
-            current.Recovered += value.Recovered
             mapper[key] = current
         } else {
             mapper[key] = value
         }
     }
 
-    result := make([]TimeValue, len(mapper))
+    result := make([]*data.DataPoint, len(mapper))
     i := 0
 	for _, value := range mapper {
         result[i] = value
@@ -171,7 +164,7 @@ func normalizeCountry(country string, province string) (string, string, string) 
             fmt.Println(country)
             panic("ERROR: Country Not Found")
         }
-        if province != "" {
+        if province != "" && !utils.IsOrganization(province) {
             prov, err := c.FindSubdivisionByName(province)
             if err != nil {
                 panic(province + ", " + country + " could not be found")
@@ -199,26 +192,4 @@ func extractFips(uid string) string {
     pattern, err := regexp.Compile("^840")
     if (err != nil) { panic(err.Error()) }
     return pattern.ReplaceAllString(uid, "")
-}
-
-func collectLatest(values []TimeValue) map[string]TimeValue {
-    latest := make(map[string]TimeValue)
-    for _, value := range values {
-        current, ok := latest[value.Key]
-        if !ok || current.Date.Before(value.Date) {
-            latest[value.Key] = value
-        }
-    }
-    return latest
-}
-
-func makeGlobalKey(country string, province string) string {
-    if province != "" {
-        return province + ", " + country
-    }
-    return country
-}
-
-func makeUsKey(fips string, county string, state string) string {
-	return fips + "," + county + "," + state
 }

@@ -1,6 +1,7 @@
 package data
 
 import (
+	"covid-tracker/utils"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -64,13 +65,13 @@ func writeFile(json string, file string) {
 	}
 }
 
-func DataToJson(data interface{}, world []DataPoint, us []CountyData) string {
-	min, max := dateRange(world, us)
+func DataToJson(data interface{}, points []*DataPoint) string {
+	min, max := dateRange(points)
 	value := reflect.ValueOf(data)
 
 	for _, key := range value.MapKeys() {
 		item := value.MapIndex(key)
-		if !ensureRange(str(item.Interface()), getField("Dates", item.Elem().Interface()), min, max) {
+		if !ensureRange(str(item.Interface()), utils.GetField("Dates", item.Elem().Interface()), min, max) {
 			// Deletes item from map
 			value.SetMapIndex(key, reflect.Value{})
 		}
@@ -88,12 +89,12 @@ type minMax struct {
 	max time.Time
 }
 
-func getDates(q Query) (time.Time, time.Time) {
+func getDates(q Query) (*time.Time, *time.Time) {
 	mm := q.AggregateWithSeed(
 		minMax{min: time.Now().AddDate(1000, 0, 0)},
 		func(acc interface{}, v interface{}) interface{} {
 			times := acc.(minMax)
-			date := getField("Date", v).(time.Time)
+			date := utils.GetField("Date", v).(time.Time)
 
 			if date.Before(times.min) {
 				times.min = date
@@ -103,27 +104,18 @@ func getDates(q Query) (time.Time, time.Time) {
 			}
 			return times
 		}).(minMax)
-	return mm.min, mm.max
+	return &mm.min, &mm.max
 }
 
-func dateRange(points []DataPoint, counties []CountyData) (time.Time, time.Time) {
-	min, max := getDates(From(points))
-	cmin, cmax := getDates(From(counties))
-
-	if min.After(cmin) {
-		min = cmin
-	}
-	if max.Before(cmax) {
-		max = cmax
-	}
-	return min, max
+func dateRange(points []*DataPoint) (*time.Time, *time.Time) {
+	return getDates(From(points))
 }
 
-func WriteDateRange(points []DataPoint, counties []CountyData) {
-	min, max := dateRange(points, counties)
-	cur := min
+func WriteDateRange(points []*DataPoint) {
+	min, max := dateRange(points)
+	cur := *min
 	dates := make([]Date, 0)
-	for !cur.After(max) {
+	for !cur.After(*max) {
 		dates = append(dates, Date{cur})
 		cur = cur.AddDate(0, 0, 1)
 	}
@@ -140,10 +132,10 @@ func str(item interface{}) string {
 	return string(bs)
 }
 
-func ensureRange(s string, items interface{}, min time.Time, max time.Time) bool {
+func ensureRange(s string, items interface{}, min *time.Time, max *time.Time) bool {
 	list := reflect.ValueOf(items)
 	first := list.Index(0).Interface()
-	minInList := getField("Date", first).(Date)
+	minInList := utils.GetField("Date", first).(Date)
 	if min.Before(minInList.Time) {
 		if list.Len() == 1 {
 			fmt.Println("Found what looks like a brand new case for " + s)
@@ -152,7 +144,7 @@ func ensureRange(s string, items interface{}, min time.Time, max time.Time) bool
 		panic("Missing first date for " + s)
 	}
 	last := list.Index(list.Len() - 1).Interface()
-	maxInList := getField("Date", last).(Date)
+	maxInList := utils.GetField("Date", last).(Date)
 	if max.After(maxInList.Time) {
 		panic("Missing last date for " + s)
 	}
@@ -168,7 +160,7 @@ type Sums struct {
 func getSums(query Query) Sums {
 	return query.AggregateWithSeed(Sums{}, func(acc interface{}, v interface{}) interface{} {
 		sums := acc.(Sums)
-		value := reflect.ValueOf(v)
+		value := reflect.Indirect(reflect.ValueOf(v))
 
 		confirmed := int(value.FieldByName("Confirmed").Int())
 		deaths := int(value.FieldByName("Deaths").Int())
@@ -181,26 +173,12 @@ func getSums(query Query) Sums {
 	}).(Sums)
 }
 
-func id(x interface{}) interface{} {
-	return x
-}
-
-func getField(name string, x interface{}) interface{} {
-	return reflect.ValueOf(x).FieldByName(name).Interface()
-}
-
-func field(name string) func(interface{}) interface{} {
-	return func(x interface{}) interface{} {
-		return reflect.ValueOf(x).FieldByName(name).Interface()
-	}
-}
-
 func grouping(groupShape interface{}) func(interface{}) interface{} {
 	value := reflect.ValueOf(groupShape)
 	typ := value.Type()
 	return func(item interface{}) interface{} {
 		result := reflect.New(typ).Elem()
-		itemValue := reflect.ValueOf(item)
+		itemValue := reflect.Indirect(reflect.ValueOf(item))
 		for i := 0; i < typ.NumField(); i++ {
 			fname := typ.Field(i).Name
 			field := itemValue.FieldByName(fname)
@@ -210,26 +188,17 @@ func grouping(groupShape interface{}) func(interface{}) interface{} {
 	}
 }
 
-func fromGroupWithOverrides(
+func fromGroup(
 	shape interface{},
-	getKey func(interface{}) interface{},
-	overrides map[interface{}]map[time.Time]Sums,
 ) func(interface{}) interface{} {
 	value := reflect.ValueOf(shape)
 	typ := value.Type()
 	return func(grp interface{}) interface{} {
 		group := grp.(Group)
 		groupKey := group.Key
-		overrideKey := getKey(groupKey)
 
-		date := getField("Date", groupKey).(time.Time)
-		override, ok := overrides[overrideKey]
-		var sums Sums
-		if ok {
-			sums = override[date]
-		} else {
-			sums = getSums(From(group.Group))
-		}
+		date := utils.GetField("Date", groupKey).(time.Time)
+		sums := getSums(From(group.Group))
 
 		sumsValue := reflect.ValueOf(sums)
 
@@ -242,7 +211,7 @@ func fromGroupWithOverrides(
 			} else if fname == "Confirmed" || fname == "Deaths" || fname == "Population" {
 				result.FieldByName(fname).Set(sumsValue.FieldByName(fname))
 			} else if !reflect.ValueOf(reflect.ValueOf(groupKey).FieldByName(fname)).IsZero() {
-				result.FieldByName(fname).Set(reflect.ValueOf(getField(fname, groupKey)))
+				result.FieldByName(fname).Set(reflect.ValueOf(utils.GetField(fname, groupKey)))
 			}
 		}
 		return result.Interface()
@@ -271,17 +240,17 @@ func aggregateTo(
 				if fname == "Dates" {
 					val.FieldByName(fname).Set(reflect.ValueOf(make([]DateData, 0)))
 				} else {
-					val.FieldByName(fname).Set(reflect.ValueOf(getField(fname, v)))
+					val.FieldByName(fname).Set(reflect.ValueOf(utils.GetField(fname, v)))
 				}
 			}
 		} else {
 			val = ptrVal.Elem()
 		}
 
-		newDates := append(getField("Dates", val.Interface()).([]DateData), makeDateData(
-			getField("Date", v).(Date),
-			getField("Confirmed", v).(int),
-			getField("Deaths", v).(int),
+		newDates := append(utils.GetField("Dates", val.Interface()).([]DateData), makeDateData(
+			utils.GetField("Date", v).(Date),
+			utils.GetField("Confirmed", v).(int),
+			utils.GetField("Deaths", v).(int),
 		))
 
 		ptrVal.Elem().FieldByName("Dates").Set(reflect.ValueOf(newDates))
@@ -290,11 +259,7 @@ func aggregateTo(
 	}
 }
 
-func fromGroup(shape interface{}) func(interface{}) interface{} {
-	return fromGroupWithOverrides(shape, id, make(map[interface{}]map[time.Time]Sums))
-}
-
-func CreateWorldData(world []DataPoint, us []CountyData) string {
+func CreateWorldData(points []*DataPoint) string {
 	type shape struct {
 		Date        Date   `json:"date"`
 		Country     string `json:"country"`
@@ -315,39 +280,24 @@ func CreateWorldData(world []DataPoint, us []CountyData) string {
 		Population  int        `json:"population"`
 	}
 
-	usMap := make(map[time.Time]Sums)
-	From(us).GroupBy(
-		field("Date"),
-		id,
-	).Select(func(group interface{}) interface{} {
-		return KeyValue{
-			Key:   group.(Group).Key,
-			Value: getSums(From(group.(Group).Group)),
-		}
-	}).ToMap(&usMap)
-
-	obj := From(world).GroupBy(
-		grouping(groupKey{}), id,
-	).Select(fromGroupWithOverrides(
+	obj := From(points).GroupBy(
+		grouping(groupKey{}), utils.Id,
+	).Select(fromGroup(
 		shape{},
-		field("Country"),
-		map[interface{}]map[time.Time]Sums{
-			"United States": usMap,
-		},
 	)).OrderBy(
-		field("Date"),
+		utils.Field("Date"),
 	).ThenBy(
-		field("Country"),
-	).AggregateWithSeed(aggregateTo(make(map[string]*mapValue), field("CountryCode")))
+		utils.Field("Country"),
+	).AggregateWithSeed(aggregateTo(make(map[string]*mapValue), utils.Field("CountryCode")))
 
-	return DataToJson(obj, world, us)
+	return DataToJson(obj, points)
 }
 
-func WriteWorldData(world []DataPoint, us []CountyData) {
-	writeFile(CreateWorldData(world, us), "world.json")
+func WriteWorldData(points []*DataPoint) {
+	writeFile(CreateWorldData(points), "world.json")
 }
 
-func CreateProvinceData(world []DataPoint, us []CountyData) string {
+func CreateProvinceData(points []*DataPoint) string {
 	type shape struct {
 		Date        Date   `json:"date"`
 		Country     string `json:"country"`
@@ -371,30 +321,31 @@ func CreateProvinceData(world []DataPoint, us []CountyData) string {
 		Dates       []DateData `json:"dates"`
 	}
 
-	obj := From(world).Where(func(item interface{}) bool {
-		return getField("Province", item).(string) != ""
+	obj := From(points).Where(func(inter interface{}) bool {
+        item := inter.(*DataPoint)
+		return item.Province != "" && item.Country != "United States"
 	}).GroupBy(
-		grouping(groupKey{}), id,
+		grouping(groupKey{}), utils.Id,
 	).Select(fromGroup(shape{})).OrderBy(
-		field("Date"),
+		utils.Field("Date"),
 	).ThenBy(
-		field("Country"),
+		utils.Field("Country"),
 	).ThenBy(
-		field("Province"),
+		utils.Field("Province"),
 	).AggregateWithSeed(aggregateTo(make(map[string]*mapValue), func(item interface{}) interface{} {
-		return getField("CountryCode", item).(string) + "-" + getField("Province", item).(string)
+		return utils.GetField("CountryCode", item).(string) + "-" + utils.GetField("Province", item).(string)
 	}))
 
-	return DataToJson(obj, world, us)
+	return DataToJson(obj, points)
 }
 
-func WriteProvinceData(world []DataPoint, us []CountyData) {
-	writeFile(CreateProvinceData(world, us), "province.json")
+func WriteProvinceData(points []*DataPoint) {
+	writeFile(CreateProvinceData(points), "province.json")
 }
 
-func CreateStateData(world []DataPoint, us []CountyData) string {
+func CreateStateData(points []*DataPoint) string {
 	type shape struct {
-		State      string `json:"state"`
+		Province   string `json:"state"`
 		FipsId     string `json:"fipsId"`
 		Date       Date   `json:"date"`
 		Population int    `json:"population"`
@@ -402,61 +353,58 @@ func CreateStateData(world []DataPoint, us []CountyData) string {
 		Deaths     int    `json:"deaths"`
 	}
 	type groupKey struct {
-		Date  time.Time
-		State string
+		Date     time.Time
+		Province string
 	}
 	type mapValue struct {
-		State      string     `json:"state"`
+		Province   string     `json:"state"`
 		FipsId     string     `json:"fipsId"`
 		Population int        `json:"population"`
 		Dates      []DateData `json:"dates"`
 	}
 
-	type fipsGroup struct {
-		State string
-	}
-
 	fipsMap := make(map[string]string)
-	From(us).Where(func(item interface{}) bool {
-		return getField("FipsId", item).(string) != ""
+	From(points).Where(func(item interface{}) bool {
+		return utils.GetField("FipsId", item).(string) != ""
 	}).DistinctBy(
-        field("State"),
-    ).Select(func(inter interface{}) interface {} {
-        return KeyValue{
-            Key: getField("State", inter),
-            Value: getField("FipsId", inter).(string)[0:2],
-        }
-    }).ToMap(&fipsMap)
+		utils.Field("Province"),
+	).Select(func(inter interface{}) interface{} {
+		return KeyValue{
+			Key:   utils.GetField("Province", inter),
+			Value: utils.GetField("FipsId", inter).(string)[0:2],
+		}
+	}).ToMap(&fipsMap)
 
-    obj := From(us).Where(func(item interface{}) bool {
-		return getField("State", item).(string) != ""
+	obj := From(points).Where(func(item interface{}) bool {
+        point := item.(*DataPoint)
+		return point.Province != "" && point.Country == "United States"
 	}).GroupBy(
-		grouping(groupKey{}), id,
+		grouping(groupKey{}), utils.Id,
 	).Select(
 		fromGroup(shape{}),
-    ).Select(func (inter interface{}) interface{} {
-        item := inter.(shape)
-        fips, ok := fipsMap[item.State]
-        if ok {
-            item.FipsId = fips
-        }
-        return item
-    }).OrderBy(
-		field("Date"),
+	).Select(func(inter interface{}) interface{} {
+		item := inter.(shape)
+		fips, ok := fipsMap[item.Province]
+		if ok {
+			item.FipsId = fips
+		}
+		return item
+	}).OrderBy(
+		utils.Field("Date"),
 	).ThenBy(
-		field("State"),
-	).AggregateWithSeed(aggregateTo(make(map[string]*mapValue), field("FipsId")))
+		utils.Field("Province"),
+	).AggregateWithSeed(aggregateTo(make(map[string]*mapValue), utils.Field("FipsId")))
 
-	return DataToJson(obj, world, us)
+	return DataToJson(obj, points)
 }
 
-func WriteStateData(world []DataPoint, us []CountyData) {
-	writeFile(CreateStateData(world, us), "state.json")
+func WriteStateData(points []*DataPoint) {
+	writeFile(CreateStateData(points), "state.json")
 }
 
-func CreateCountyData(world []DataPoint, us []CountyData) string {
+func CreateCountyData(points []*DataPoint) string {
 	type shape struct {
-		State      string `json:"state"`
+		Province      string `json:"state"`
 		County     string `json:"county"`
 		FipsId     string `json:"fipsId"`
 		Date       Date   `json:"date"`
@@ -465,32 +413,33 @@ func CreateCountyData(world []DataPoint, us []CountyData) string {
 		Deaths     int    `json:"deaths"`
 	}
 	type groupKey struct {
-		Date   time.Time   `json:"date"`
-		State  string `json:"state"`
-		County string `json:"county"`
-		FipsId string `json:"fipsId"`
+		Date   time.Time `json:"date"`
+		Province  string    `json:"state"`
+		County string    `json:"county"`
+		FipsId string    `json:"fipsId"`
 	}
 	type mapValue struct {
-		FipsId         string     `json:"id"`
+		FipsId     string     `json:"id"`
 		Population int        `json:"population"`
 		Dates      []DateData `json:"dates"`
 	}
 
-	obj := From(us).Where(func(item interface{}) bool {
-		return getField("FipsId", item).(string) != ""
+	obj := From(points).Where(func(item interface{}) bool {
+        point := item.(*DataPoint)
+		return point.FipsId != "" && point.Country == "United States"
 	}).GroupBy(
-		grouping(groupKey{}), id,
+		grouping(groupKey{}), utils.Id,
 	).Select(
 		fromGroup(shape{}),
 	).OrderBy(
-		field("Date"),
+		utils.Field("Date"),
 	).ThenBy(
-		field("State"),
-	).AggregateWithSeed(aggregateTo(make(map[string]*mapValue), field("FipsId")))
+		utils.Field("Province"),
+	).AggregateWithSeed(aggregateTo(make(map[string]*mapValue), utils.Field("FipsId")))
 
-	return DataToJson(obj, world, us)
+	return DataToJson(obj, points)
 }
 
-func WriteCountyData(world []DataPoint, us []CountyData) {
-	writeFile(CreateCountyData(world, us), "county.json")
+func WriteCountyData(points []*DataPoint) {
+	writeFile(CreateCountyData(points), "county.json")
 }

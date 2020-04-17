@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func maxDate(timeData []TimeValue) time.Time {
+func maxDate(timeData []*data.DataPoint) time.Time {
 	var max time.Time
 	for _, data := range timeData {
         if max.Before(data.Date) {
@@ -17,7 +17,7 @@ func maxDate(timeData []TimeValue) time.Time {
 }
 
 // Get the next date to use after timeseries data
-func nextDate(timeData []TimeValue) time.Time {
+func nextDate(timeData []*data.DataPoint) time.Time {
     max := maxDate(timeData)
     // 1 day after latest data
     next := max.AddDate(0, 0, 1)
@@ -28,28 +28,26 @@ func nextDate(timeData []TimeValue) time.Time {
     return next
 }
 
-func GetData(start time.Time) ([]data.DataPoint, []data.CountyData) {
-    globals := timeSeriesGlobals(start)
-    globals = append(globals, timeSeriesUsTerritories(start)...)
-    nextGlobalDate := nextDate(globals)
-
-    us := timeSeriesUs(start)
-    nextUsDate := nextDate(us)
-
-    if !nextUsDate.Equal(nextGlobalDate) {
-        panic("Next dates do not equal " + nextGlobalDate.String() + " != " + nextUsDate.String())
+func collectLatest(values []*data.DataPoint) map[data.LocationKey]*data.DataPoint {
+    latest := make(map[data.LocationKey]*data.DataPoint)
+    for _, value := range values {
+        key := *value.LocationKey()
+        current, ok := latest[key]
+        if !ok || current.Date.Before(value.Date) {
+            latest[key] = value
+        }
     }
+    return latest
+}
 
+func GetData() []*data.DataPoint {
+    globals := timeSeriesGlobals()
+    us := timeSeriesUs()
 
-    globalData, usData := fetchCurrent(nextGlobalDate, collectLatest(globals), collectLatest(us))
+    combined := append(globals, us...)
+    next := nextDate(combined)
 
-    for _, global := range globals {
-        globalData = append(globalData, toDataPoint(global));
-    }
+    currentData := fetchCurrent(&next, collectLatest(combined))
 
-    for _, county := range us {
-        usData = append(usData, toCountyData(county));
-    }
-
-	return globalData, usData
+	return append(combined, currentData...)
 }

@@ -5,31 +5,62 @@ import (
 )
 
 type DataPoint struct {
-	Province        string    `json:"province"`
-	Country         string    `json:"country"`
-	CountryCode     string    `json:"countryCode"`
-	Confirmed       int       `json:"confirmed"`
-	Deaths          int       `json:"deaths"`
-	Date            time.Time `json:"date"`
-	Lat             string    `json:"lat"`
-	Long            string    `json:"long"`
-	Population            int    `json:"population"`
-	ExternalCountry string    `json:"-"`
+	Country     string
+	CountryCode string
+
+	Province string
+
+	County string
+	FipsId string
+
+	Lat  string
+	Long string
+
+    key *DataPointKey
+    locationKey *LocationKey
+
+	Date       time.Time
+	Confirmed  int
+	Deaths     int
+	Population int
 }
 
-var Point DataPoint
-
-type CountyData struct {
-	FipsId    string    `json:"fipsId"`
-	State     string    `json:"state"`
-	County    string    `json:"county"`
-	Confirmed int       `json:"confirmed"`
-	Deaths    int       `json:"deaths"`
-	Date      time.Time `json:"date"`
-	Lat       string    `json:"lat"`
-	Population            int    `json:"population"`
-	Long      string    `json:"long"`
+type DataPointKey struct {
+    Date time.Time
+    Country string
+    Province string
+    County string
 }
 
-var CountyCases CountyData
+type LocationKey struct {
+    Country string
+    Province string
+    County string
+}
 
+func (dp *DataPoint) Key() *DataPointKey {
+    if dp.key != nil {
+        return dp.key
+    }
+    key := &DataPointKey{
+        Date: dp.Date,
+        Country: dp.Country,
+        Province: dp.Province,
+        County: dp.County,
+    }
+    dp.key = key;
+    return key
+}
+
+func (dp *DataPoint) LocationKey() *LocationKey {
+    if dp.locationKey != nil {
+        return dp.locationKey
+    }
+    key := &LocationKey{
+        Country: dp.Country,
+        Province: dp.Province,
+        County: dp.County,
+    }
+    dp.locationKey = key;
+    return key
+}

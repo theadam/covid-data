@@ -1,11 +1,14 @@
 package jhu
 
 import (
+	"covid-tracker/utils"
 	"encoding/csv"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
+
+	. "github.com/ahmetb/go-linq"
 )
 
 type OverrideData struct {
@@ -24,7 +27,7 @@ type OverrideData struct {
 	Population  int
 }
 
-func fetchOverrides() []OverrideData {
+func fetchOverrides() (map[string]OverrideData, map[string]OverrideData, map[string]OverrideData) {
 	body := fetchFromRepo("master", "csse_covid_19_data/UID_ISO_FIPS_LookUp_Table.csv")
 	defer body.Close()
 
@@ -44,7 +47,7 @@ func fetchOverrides() []OverrideData {
         country, province, countryCode := normalizeCountry(columns[7], columns[6])
         population, err := strconv.Atoi(columns[11])
 		if err != nil {
-            if country != "Cruise" && columns[5] != "Unassigned" && !strings.HasPrefix(columns[5], "Out of") && province != "Recovered" {
+            if country != "Cruise" && columns[5] != "Unassigned" && !strings.HasPrefix(columns[5], "Out of") && province != "Recovered" && !utils.IsOrganization(province){
                 fmt.Println("No population for " + columns[0] + ", " + columns[5] + ", " + province + ", " + country)
             }
             population = 0
@@ -65,34 +68,44 @@ func fetchOverrides() []OverrideData {
 			Population:  population,
 		})
 	}
-    return data
+    uidMap := make(map[string]OverrideData)
+    fipsMap := make(map[string]OverrideData)
+    provinceCountryMap := make(map[string]OverrideData)
+
+    From(data).ToMapBy(&uidMap, utils.Field("UID"), utils.Id)
+    From(data).ToMapBy(&fipsMap, utils.Field("Fips"), utils.Id)
+    From(data).Where(func(inter interface{}) bool {
+        item := inter.(OverrideData)
+        return item.County == ""
+    }).ToMapBy(&provinceCountryMap, func(inter interface{}) interface{} {
+        item := inter.(OverrideData)
+        return item.Province + "-" + item.Country
+    }, utils.Id)
+
+    return uidMap, fipsMap, provinceCountryMap
 }
-var overridedata = fetchOverrides()
+var uidMap, fipsMap, provinceCountryMap = fetchOverrides()
 
 func OverrideFromUID(uid string) OverrideData {
-    for _, item := range(overridedata) {
-        if item.UID == uid {
-            return item;
-        }
+    val, ok := uidMap[uid]
+    if !ok {
+        panic("UID not found " + uid)
     }
-    panic("UID not found " + uid)
-}
-
-func OverrideForProvince(country string, province string) OverrideData {
-    for _, item := range(overridedata) {
-        if item.Country == country && item.Province == province && item.County == "" {
-            return item;
-        }
-    }
-    panic("item not found: " + country + ", " + province)
+    return val
 }
 
 func OverrideForFips(fips string) OverrideData {
-    if fips == "" { return OverrideData{} }
-    for _, item := range(overridedata) {
-        if item.Fips == fips {
-            return item;
-        }
+    val, ok := fipsMap[fips]
+    if !ok {
+        panic("Fips not found: " + fips)
     }
-    panic("item not found: (fips)" + fips)
+    return val
+}
+
+func OverrideForProvince(country string, province string) OverrideData {
+    val, ok := provinceCountryMap[province + "-" + country]
+    if !ok {
+        panic("Item not found: " + country + ", " + province)
+    }
+    return val
 }

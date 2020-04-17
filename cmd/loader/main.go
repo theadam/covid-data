@@ -19,15 +19,11 @@ func main() {
 	fmt.Println("Loading all data")
 	fmt.Println()
 
-	// Gets all data for all time
-	var start time.Time
+	points := jhu.GetData()
 
-	points, counties := jhu.GetData(start)
-
-	runAction("Writing World JSON data", func() { data.WriteWorldData(points, counties) })
-	runAction("Writing Province JSON data", func() { data.WriteProvinceData(points, counties) })
-	runAction("Writing State JSON data", func() { data.WriteStateData(points, counties) })
-	runAction("Writing County JSON data", func() { data.WriteCountyData(points, counties) })
-	runAction("Writing Date Range JSON data", func() { data.WriteDateRange(points, counties) })
-
+	runAction("Writing World JSON data", func() { data.WriteWorldData(points) })
+	runAction("Writing Province JSON data", func() { data.WriteProvinceData(points) })
+	runAction("Writing State JSON data", func() { data.WriteStateData(points) })
+	runAction("Writing County JSON data", func() { data.WriteCountyData(points) })
+	runAction("Writing Date Range JSON data", func() { data.WriteDateRange(points) })
 }

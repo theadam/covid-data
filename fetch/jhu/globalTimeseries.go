@@ -42,10 +42,7 @@ func (_ *GlobalTimeseries) TimeColumns(columns []string, _ string) []string {
 }
 
 func (_ *GlobalTimeseries) Key(fields map[string]string) string {
-    if fields["province"] != "" {
-        return fields["province"] +  ", " + fields["country"]
-    }
-    return fields["country"]
+    return makeGlobalKey(fields["province"], fields["country"])
 }
 
 func (_ *GlobalTimeseries) Skip(fields map[string]string) bool {

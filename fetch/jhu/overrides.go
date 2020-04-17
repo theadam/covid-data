@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 )
 
 type OverrideData struct {
@@ -43,7 +44,9 @@ func fetchOverrides() []OverrideData {
         country, province, countryCode := normalizeCountry(columns[7], columns[6])
         population, err := strconv.Atoi(columns[11])
 		if err != nil {
-            fmt.Println("No population for " + columns[0] + ", " + columns[5] + ", " + province + ", " + country)
+            if country != "Cruise" && columns[5] != "Unassigned" && !strings.HasPrefix(columns[5], "Out of") && province != "Recovered" {
+                fmt.Println("No population for " + columns[0] + ", " + columns[5] + ", " + province + ", " + country)
+            }
             population = 0
 		}
 		data = append(data, OverrideData{

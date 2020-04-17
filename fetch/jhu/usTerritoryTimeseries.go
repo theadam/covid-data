@@ -29,10 +29,7 @@ func (_ *UsTerritoryTimeseries) TimeColumns(columns []string, kind string) []str
 }
 
 func (_ *UsTerritoryTimeseries) Key(fields map[string]string) string {
-    if fields["province"] != "" {
-        return fields["province"] +  ", " + fields["country"]
-    }
-    return fields["country"]
+    return makeGlobalKey(fields["province"], fields["country"])
 }
 
 func (_ *UsTerritoryTimeseries) Skip(fields map[string]string) bool {

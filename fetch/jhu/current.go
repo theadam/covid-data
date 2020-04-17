@@ -65,18 +65,22 @@ func fetchCurrent(
 				fmt.Println(strings.Join(columns, ", "))
 				panic("County found not in the US")
 			}
+            state := columns[0]
 			fipsData := FipsMap[padFips(columns[10])]
             if fipsData.Fips == "" {
                 f := extractFips(columns[15])
                 fipsData = FipsMap[f]
             }
-			key := fipsData.Fips
+            if fipsData.Fips != "" {
+                state = utils.StateCodes[fipsData.StateCode]
+                county = fipsData.Name
+            }
+            key := makeUsKey(fipsData.Fips, county, state)
 			usedUs[key] = true
 			countyData = append(countyData, data.CountyData{
 				FipsId:    fipsData.Fips,
-				State:     utils.StateCodes[fipsData.StateCode],
-				StateCode: fipsData.StateCode,
-				County:    fipsData.Name,
+				State:     state,
+				County:    county,
 				Confirmed: confirmed,
 				Deaths:    deaths,
 				Date:      date,
@@ -84,14 +88,10 @@ func fetchCurrent(
 				Long:      long,
                 Population: OverrideForFips(fipsData.Fips).Population,
 			})
-
 		} else {
 			country, province, countryCode := normalizeCountry(country, columns[0])
 			if !skipGlobal(country, province) {
-				key := country
-				if province != "" {
-					key = province + ", " + country
-				}
+				key := makeGlobalKey(country, province)
 				usedGlobals[key] = true
 				worldData = append(worldData, data.DataPoint{
 					Province:        province,

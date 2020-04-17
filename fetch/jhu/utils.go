@@ -151,7 +151,7 @@ func normalizeCountry(country string, province string) (string, string, string) 
         possibleCountry = province
     }
     provAsCountry, err := CountryQuery.FindCountryByName(possibleCountry)
-    if (err == nil) {
+    if (err == nil && possibleCountry != "Georgia") {
         return provAsCountry.Name.Common, "", provAsCountry.Codes.CCN3
     }
 
@@ -210,4 +210,15 @@ func collectLatest(values []TimeValue) map[string]TimeValue {
         }
     }
     return latest
+}
+
+func makeGlobalKey(country string, province string) string {
+    if province != "" {
+        return province + ", " + country
+    }
+    return country
+}
+
+func makeUsKey(fips string, county string, state string) string {
+	return fips + "," + county + "," + state
 }

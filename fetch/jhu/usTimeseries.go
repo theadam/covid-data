@@ -26,7 +26,7 @@ func (_ *UsTimeseries) ExtractExtraData(columns []string) map[string]string {
 	country := columns[7]
 	lat := columns[8]
 	long := columns[9]
-	key := fips
+	key := makeUsKey(fips, county, state)
 	return map[string]string{
 		"fips":    fips,
 		"county":  county,
@@ -45,7 +45,6 @@ func toCountyData(timeData TimeValue) data.CountyData {
 	series := data.CountyData{
 		FipsId:    fields["fips"],
 		State:     fields["state"],
-		StateCode: fields["stateCode"],
 		County:    fields["county"],
 		Confirmed: timeData.Confirmed,
 		Deaths:    timeData.Deaths,

@@ -42,7 +42,7 @@ func (_ *GlobalTimeseries) TimeColumns(columns []string, _ string) []string {
 }
 
 func (_ *GlobalTimeseries) Key(fields map[string]string) string {
-    return makeGlobalKey(fields["province"], fields["country"])
+    return makeGlobalKey(fields["country"], fields["province"])
 }
 
 func (_ *GlobalTimeseries) Skip(fields map[string]string) bool {

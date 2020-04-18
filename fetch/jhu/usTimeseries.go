@@ -34,10 +34,9 @@ func (_ *UsTimeseries) ToDataPoint(columns []string) *data.DataPoint {
         province = utils.StateCodes[fipsData.StateCode]
         county = fipsData.Name
         population = OverrideForFips(fipsData.Fips).Population
-    } else {
+    } else if county == ""{
         population = OverrideForProvince(country, province).Population
     }
-
     return &data.DataPoint{
         Country: country,
         CountryCode: countryCode,

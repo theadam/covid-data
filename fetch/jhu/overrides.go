@@ -72,8 +72,16 @@ func fetchOverrides() (map[string]OverrideData, map[string]OverrideData, map[str
     fipsMap := make(map[string]OverrideData)
     provinceCountryMap := make(map[string]OverrideData)
 
-    From(data).ToMapBy(&uidMap, utils.Field("UID"), utils.Id)
-    From(data).ToMapBy(&fipsMap, utils.Field("Fips"), utils.Id)
+    From(data).Where(func(inter interface{}) bool {
+        item := inter.(OverrideData)
+        return item.UID != ""
+    }).ToMapBy(&uidMap, utils.Field("UID"), utils.Id)
+
+    From(data).Where(func(inter interface{}) bool {
+        item := inter.(OverrideData)
+        return item.Fips != ""
+    }).ToMapBy(&fipsMap, utils.Field("Fips"), utils.Id)
+
     From(data).Where(func(inter interface{}) bool {
         item := inter.(OverrideData)
         return item.County == ""

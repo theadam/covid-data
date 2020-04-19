@@ -21,7 +21,7 @@ func nextDate(timeData []*data.DataPoint) time.Time {
     max := maxDate(timeData)
     // 1 day after latest data
     next := max.AddDate(0, 0, 1)
-    if next.Sub(time.Now()).Hours() > 24 {
+    if time.Until(next).Hours() > 24 {
         fmt.Println(next.String())
         panic("Next date is too far in the future")
     }

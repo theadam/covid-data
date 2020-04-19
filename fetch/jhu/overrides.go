@@ -27,7 +27,7 @@ type OverrideData struct {
 	Population  int
 }
 
-func fetchOverrides() (map[string]OverrideData, map[string]OverrideData, map[string]OverrideData) {
+func fetchOverrides() (map[string]OverrideData, map[string]OverrideData) {
 	body := fetchFromRepo("master", "csse_covid_19_data/UID_ISO_FIPS_LookUp_Table.csv")
 	defer body.Close()
 
@@ -68,14 +68,8 @@ func fetchOverrides() (map[string]OverrideData, map[string]OverrideData, map[str
 			Population:  population,
 		})
 	}
-    uidMap := make(map[string]OverrideData)
     fipsMap := make(map[string]OverrideData)
     provinceCountryMap := make(map[string]OverrideData)
-
-    From(data).Where(func(inter interface{}) bool {
-        item := inter.(OverrideData)
-        return item.UID != ""
-    }).ToMapBy(&uidMap, utils.Field("UID"), utils.Id)
 
     From(data).Where(func(inter interface{}) bool {
         item := inter.(OverrideData)
@@ -90,17 +84,9 @@ func fetchOverrides() (map[string]OverrideData, map[string]OverrideData, map[str
         return item.Province + "-" + item.Country
     }, utils.Id)
 
-    return uidMap, fipsMap, provinceCountryMap
+    return fipsMap, provinceCountryMap
 }
-var uidMap, fipsMap, provinceCountryMap = fetchOverrides()
-
-func OverrideFromUID(uid string) OverrideData {
-    val, ok := uidMap[uid]
-    if !ok {
-        panic("UID not found " + uid)
-    }
-    return val
-}
+var fipsMap, provinceCountryMap = fetchOverrides()
 
 func OverrideForFips(fips string) OverrideData {
     val, ok := fipsMap[fips]

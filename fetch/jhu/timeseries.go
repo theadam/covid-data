@@ -5,19 +5,9 @@ import (
 	"encoding/csv"
 	"io"
 	"strconv"
-	"time"
 )
 
 const timeLayout = "1/2/06"
-
-type TimeValue struct {
-	Date      time.Time
-	Confirmed int
-	Deaths    int
-	Recovered int
-	ExtraData map[string]string
-	Key       string
-}
 
 type DataRow interface {
 	TimeColumns([]string, string) []string

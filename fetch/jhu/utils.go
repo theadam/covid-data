@@ -44,30 +44,6 @@ func fetchFromRepo(branch string, path string) io.ReadCloser {
     return res
 }
 
-// returns the index of the matched date or -1
-func findMatchingValue(slice []TimeValue, value TimeValue) int {
-	for i, current := range slice {
-		if value.Date.Equal(current.Date) && value.Key == current.Key {
-			return i
-		}
-	}
-	return -1
-}
-
-func mergeSingleValue(values []TimeValue, value TimeValue) []TimeValue {
-	index := findMatchingValue(values, value)
-	if index != -1 {
-		last := values[index]
-		last.Confirmed += value.Confirmed
-		last.Deaths += value.Deaths
-		last.Recovered += value.Recovered
-		values[index] = last
-		return values
-	} else {
-		return append(values, value)
-	}
-}
-
 func consolidateValues(values []*data.DataPoint) []*data.DataPoint {
     mapper := make(map[data.DataPointKey]*data.DataPoint)
     for _, value := range values {

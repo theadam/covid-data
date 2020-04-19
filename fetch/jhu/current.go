@@ -16,7 +16,7 @@ func fetchCurrent(
 	latest map[data.LocationKey]*data.DataPoint,
 ) []*data.DataPoint {
 	used := make(map[data.LocationKey]bool)
-	for k, _ := range latest {
+	for k := range latest {
 		used[k] = false
 	}
 
@@ -101,7 +101,7 @@ func fetchCurrent(
 	}
 
 	for k, v := range used {
-		if v == false {
+		if !v {
             l := latest[k]
             addedValue := data.DataPoint{
                 Country: l.Country,

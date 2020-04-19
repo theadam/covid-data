@@ -9,15 +9,15 @@ import (
 )
 
 func runAction(wg *sync.WaitGroup, name string, action func()) {
-    wg.Add(1)
+	wg.Add(1)
 	now := time.Now()
 
-    go func () {
-        action()
-        fmt.Println("Finished " + name + " in " + time.Since(now).String())
-        fmt.Println()
-        wg.Done()
-    }()
+	go func() {
+		action()
+		fmt.Println("Finished " + name + " in " + time.Since(now).String())
+		fmt.Println()
+		wg.Done()
+	}()
 }
 
 func main() {
@@ -34,6 +34,6 @@ func main() {
 	runAction(&wg, "Writing State JSON data", func() { data.WriteStateData(points) })
 	runAction(&wg, "Writing County JSON data", func() { data.WriteCountyData(points) })
 	runAction(&wg, "Writing Date Range JSON data", func() { data.WriteDateRange(points) })
-    wg.Wait()
-    fmt.Println("Finished in " + time.Since(now).String())
+	wg.Wait()
+	fmt.Println("Finished in " + time.Since(now).String())
 }

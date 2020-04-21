@@ -2,3 +2,9 @@ test.db
 node_modules
 client/build
 volumes
+
+client/src/data/world.json
+client/src/data/county.json
+client/src/data/state.json
+client/src/data/province.json
+client/src/data/dateRange.json

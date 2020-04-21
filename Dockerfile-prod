@@ -1,5 +1,21 @@
-# Step 1, build client
-FROM node:13.12.0-alpine3.11 AS webpack-build
+# Step 1, build json
+FROM golang:1.14.1 AS build-server
+
+WORKDIR /app
+
+COPY ./go.mod ./go.sum /app/
+RUN go mod download
+
+COPY . /app/
+
+RUN go build -o /app/main ./cmd/loader/main.go
+
+RUN chmod +x /app/main
+
+RUN /app/main
+
+# Step 2, build client
+FROM node:13.12.0 AS webpack-build
 
 WORKDIR /app
 
@@ -9,34 +25,11 @@ COPY ./client/package.json ./client/yarn.lock /app/
 RUN yarn
 
 COPY ./client /app/
+COPY --from=build-server /app/client/src/data/*.json /app/src/data/
 
 RUN npm run-script build
 
-# Step 2, build server
-FROM golang:1.14.1-alpine3.11 AS build-server
+RUN git config --global user.email "theadam4257@gmail.com"
+RUN git config --global user.name "Adam Nalisnick"
 
-WORKDIR /app
-
-RUN apk add build-base
-RUN apk add --no-cache git mercurial
-
-COPY ./go.mod ./go.sum /app/
-RUN go mod download
-
-COPY . /app/
-
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -installsuffix cgo -o /app/main ./cmd/server/main.go
-
-RUN chmod +x /app/main
-
-# Step 3, Put it all together
-FROM alpine:latest
-
-WORKDIR /app
-
-RUN mkdir -p /app/client/build
-
-COPY --from=webpack-build /app/build /app/client/build
-COPY --from=build-server /app/main  /app
-
-CMD /app/main
+CMD node_modules/.bin/gh-pages -f -d build --repo git@github.com:theadam/covid-data.git

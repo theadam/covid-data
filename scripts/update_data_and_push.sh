@@ -1,5 +1,4 @@
 #! /bin/bash
 
-./scripts/load_data.sh
-./scripts/build_client.sh
-./scripts/push_gh_pages.sh
+docker build . -f Dockerfile-prod -t covid-data
+docker run -v "$HOME/.ssh:/root/.ssh" -it covid-data    

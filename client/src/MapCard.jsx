@@ -36,6 +36,11 @@ export default function MapCard() {
 
   const calculateValue = React.useCallback(
     (item, index) => {
+      if (dataKey === 'deathRate') {
+        const v = item?.dates?.[index];
+        if (!v) return undefined;
+        return v?.deaths / v?.confirmed;
+      }
       if (usePopulation) {
         return perMillionPop(item?.dates?.[index]?.[dataKey], item?.population);
       }
@@ -108,12 +113,18 @@ export default function MapCard() {
                   <MenuItem onClick={handleMenu('confirmed')}>
                     Confirmed Cases
                   </MenuItem>
+                  <MenuItem onClick={handleMenu('confirmed')}>
+                    Confirmed Cases
+                  </MenuItem>
                   <MenuItem onClick={handleMenu('deaths')}>Deaths</MenuItem>
                   <MenuItem onClick={handleMenu('confirmed', true)}>
                     Confirmed Cases Per 1m Population
                   </MenuItem>
                   <MenuItem onClick={handleMenu('deaths', true)}>
                     Deaths Per 1m Population
+                  </MenuItem>
+                  <MenuItem onClick={handleMenu('deathRate')}>
+                    Death Rate for Confirmed Cases
                   </MenuItem>
                 </MenuList>
               </ClickAwayListener>

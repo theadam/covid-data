@@ -24,6 +24,7 @@ export default function BasicDataSection({ selectedItem, onSelect, index }) {
   const confirmed = date.confirmed;
   const deaths = date.deaths;
   const stats = changeStats(date, dateBefore);
+  const deathPercent = formatPercent(deaths / confirmed);
 
   return (
     <div style={{ color: '#333' }}>
@@ -66,7 +67,8 @@ export default function BasicDataSection({ selectedItem, onSelect, index }) {
         {deaths.toLocaleString()} Deaths
         <Typography variant="subtitle2" component="span">
           {' '}
-          ({perMillionPop(deaths, item.population)} per 1m population)
+          ({perMillionPop(deaths, item.population)} per 1m population) (
+          {deathPercent.toLocaleString()}% of Confirmed Cases)
         </Typography>
         {dateBefore && (
           <Typography variant="subtitle2" component="div">

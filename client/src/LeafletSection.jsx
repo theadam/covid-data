@@ -1,7 +1,7 @@
 import React from 'react';
 import { css } from '@emotion/core';
 import { Pane, Map, TileLayer } from 'react-leaflet';
-import { getAllMax, makePolyline, perMillionPop } from './utils';
+import { formatPercent, getAllMax, makePolyline, perMillionPop } from './utils';
 import DataLayer from './DataLayer';
 import Loader from './Loader';
 import features, { data, countriesWithRegions } from './features';
@@ -229,6 +229,7 @@ function Highlight({ highlight, index }) {
   const confirmed = date?.confirmed;
   const deaths = date?.deaths;
   const population = item?.population;
+  const deathPercent = formatPercent(deaths / confirmed);
   return (
     <span>
       <b>{highlight.displayName}</b>
@@ -240,17 +241,21 @@ function Highlight({ highlight, index }) {
             <br />
           </span>
           <span>
-            {deaths.toLocaleString()} Deaths
-            <br />
-          </span>
-          <span>
             {perMillionPop(confirmed, population).toLocaleString()} Cases Per 1m
             Population
             <br />
           </span>
           <span>
+            {deaths.toLocaleString()} Deaths
+            <br />
+          </span>
+          <span>
             {perMillionPop(deaths, population).toLocaleString()} Deaths Per 1m
             Population
+            <br />
+          </span>
+          <span>
+            {deathPercent}% Deaths for Confirmed Cases
             <br />
           </span>
         </span>

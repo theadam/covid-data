@@ -25,11 +25,18 @@ function calculateIncrease(current, old) {
   return Math.round(((current - old) / current) * 1000) / 10;
 }
 
+function calculateAdded(current, old) {
+  if (old === null || old === undefined) return undefined;
+  return current - old;
+}
+
 const mapCalculations = {
   confirmed: (item) => item.confirmed,
   deaths: (item) => item.deaths,
   increaseConfirmed: (item, i, items) =>
     calculateIncrease(item.confirmed, items?.[i - 1]?.confirmed),
+  addedConfirmed: (item, i, items) =>
+    calculateAdded(item.confirmed, items?.[i - 1]?.confirmed),
   increaseDeaths: (item, i, items) =>
     calculateIncrease(item.confirmed, items?.[i - 1]?.confirmed),
   confirmedPerMillion: (date, i, dates, item) =>
@@ -42,6 +49,7 @@ export const typeText = {
   confirmed: 'Confirmed Cases',
   deaths: 'Deaths',
   increaseConfirmed: '% Change in Cases',
+  addedConfirmed: 'Daily Added Cases',
   increaseDeaths: '% Change in Deaths',
   confirmedPerMillion: 'Confirmed Cases Per 1M Population',
   deathsPerMillion: 'Deaths Per 1M Population',
@@ -51,6 +59,7 @@ const formatValue = {
   confirmed: (n) => `${n.toLocaleString()} Confirmed Cases`,
   deaths: (n) => `${n.toLocaleString()} Deaths`,
   increaseConfirmed: (n) => `${n.toLocaleString()}% Growth of Cases`,
+  addedConfirmed: (n) => `${n.toLocaleString()} Added Cases`,
   increaseDeaths: (n) => `${n.toLocaleString()}% Growth of Deaths`,
   confirmedPerMillion: (n) =>
     `${n.toLocaleString()} Confirmed Cases Per 1M Population`,

@@ -54,28 +54,16 @@ export default function BasicDataSection({ selectedItem, onSelect, index }) {
             {' '}
             ({perMillionPop(confirmed, item.population)} per 1m population)
           </Typography>
-          {stats && (
-            <Typography variant="subtitle2" component="div">
-              {stats.confirmedChange.toLocaleString()} added (
-              {stats.confirmedPercent}% increase)
-            </Typography>
-          )}
         </Typography>
       </div>
 
       <Typography variant="h6">
         {deaths.toLocaleString()} Deaths
         <Typography variant="subtitle2" component="span">
-          {' '}
-          ({perMillionPop(deaths, item.population)} per 1m population) (
-          {deathPercent.toLocaleString()}% of Confirmed Cases)
+          ({perMillionPop(deaths, item.population)} per 1m population)
+          <br />
+          {deathPercent.toLocaleString()}% of Confirmed Cases
         </Typography>
-        {dateBefore && (
-          <Typography variant="subtitle2" component="div">
-            {stats.deathsChange.toLocaleString()} added ({stats.deathsPercent}%
-            increase)
-          </Typography>
-        )}
       </Typography>
     </div>
   );

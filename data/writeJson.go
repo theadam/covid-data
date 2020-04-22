@@ -377,7 +377,7 @@ func CreateStateData(points []*DataPoint) string {
 
 	obj := From(points).Where(func(item interface{}) bool {
         point := item.(*DataPoint)
-		return point.Province != "" && point.Country == "United States" && point.FipsId != ""
+		return point.Province != "" && point.Country == "United States"
 	}).GroupBy(
 		grouping(groupKey{}), utils.Id,
 	).Select(
@@ -389,7 +389,10 @@ func CreateStateData(points []*DataPoint) string {
 			item.FipsId = fips
 		}
 		return item
-	}).OrderBy(
+    }).Where(func(inter interface{}) bool {
+        point := inter.(shape)
+        return point.FipsId != ""
+    }).OrderBy(
 		utils.Field("Date"),
 	).ThenBy(
 		utils.Field("Province"),

@@ -38,7 +38,7 @@ export default function MapCard() {
     (item, index) => {
       if (dataKey === 'deathRate') {
         const v = item?.dates?.[index];
-        if (!v) return undefined;
+        if (!v || v?.confirmed === 0) return undefined;
         return v?.deaths / v?.confirmed;
       }
       if (usePopulation) {

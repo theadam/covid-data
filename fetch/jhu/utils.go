@@ -140,6 +140,9 @@ func normalizeCountry(country string, province string) (string, string, string) 
             fmt.Println(country)
             panic("ERROR: Country Not Found")
         }
+        if (country == "Spain") {
+            province = ""
+        }
         if province != "" && !utils.IsOrganization(province) {
             prov, err := c.FindSubdivisionByName(province)
             if err != nil {

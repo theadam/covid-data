@@ -47,7 +47,7 @@ func fetchOverrides() (map[string]OverrideData, map[string]OverrideData) {
         country, province, countryCode := normalizeCountry(columns[7], columns[6])
         population, err := strconv.Atoi(columns[11])
 		if err != nil {
-            if country != "Cruise" && columns[5] != "Unassigned" && !strings.HasPrefix(columns[5], "Out of") && province != "Recovered" && !utils.IsOrganization(province){
+            if country != "Cruise" && columns[5] != "Unassigned" && !strings.HasPrefix(columns[5], "Out of") && province != "Recovered" && !utils.IsOrganization(province) && !utils.CountyIsOrganization(columns[5]) {
                 fmt.Println("No population for " + columns[0] + ", " + columns[5] + ", " + province + ", " + country)
             }
             population = 0

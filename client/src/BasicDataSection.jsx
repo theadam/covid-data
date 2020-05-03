@@ -4,26 +4,12 @@ import Typography from '@material-ui/core/Typography';
 import { worldItem } from './features';
 import { formatPercent, perMillionPop, formatDate, isToday } from './utils';
 
-function changeStats(current, before) {
-  if (!before) return null;
-  const confirmedChange = current.confirmed - before.confirmed;
-  const deathsChange = current.deaths - before.deaths;
-  return {
-    confirmedChange,
-    deathsChange,
-    confirmedPercent: formatPercent(confirmedChange / current.confirmed || 0),
-    deathsPercent: formatPercent(deathsChange / current.deaths || 0),
-  };
-}
-
 export default function BasicDataSection({ selectedItem, onSelect, index }) {
   const item = selectedItem ? selectedItem : worldItem;
   const date = item.dates[index];
-  const dateBefore = item.dates[index - 1];
 
   const confirmed = date.confirmed;
   const deaths = date.deaths;
-  const stats = changeStats(date, dateBefore);
   const deathPercent = formatPercent(deaths / confirmed);
 
   return (

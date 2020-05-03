@@ -1,6 +1,6 @@
 import countyData from './data/counties-10m.json';
 import * as topojson from 'topojson-client';
-import worldData from './data/countries-110m.json';
+import worldData from './data/countries-50m.json';
 import provinceData from './data/canadaprovtopo.json';
 import australiaData from './data/au-states.json';
 import chinaData from './data/china-provinces.json';
